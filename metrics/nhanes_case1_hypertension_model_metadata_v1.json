@@ -1,0 +1,100 @@
+{
+  "model_name": "logistic_regression",
+  "target": "hypertension_130_80",
+  "features": [
+    "RIDAGEYR",
+    "INDFMPIR",
+    "BMXBMI",
+    "BMXWAIST",
+    "LBXTC",
+    "LBDHDD",
+    "LBXGH",
+    "sex",
+    "race_ethnicity",
+    "current_smoker"
+  ],
+  "numeric_features": [
+    "RIDAGEYR",
+    "INDFMPIR",
+    "BMXBMI",
+    "BMXWAIST",
+    "LBXTC",
+    "LBDHDD",
+    "LBXGH"
+  ],
+  "categorical_features": [
+    "sex",
+    "race_ethnicity",
+    "current_smoker"
+  ],
+  "forbidden_features": [
+    "BPXSY1",
+    "BPXSY2",
+    "BPXSY3",
+    "BPXSY4",
+    "BPXDI1",
+    "BPXDI2",
+    "BPXDI3",
+    "BPXDI4",
+    "sbp_mean_all",
+    "dbp_mean_all",
+    "sbp_mean_followup",
+    "dbp_mean_followup",
+    "sbp_mean",
+    "dbp_mean",
+    "BPQ020",
+    "BPQ050A",
+    "hbp_med_current"
+  ],
+  "threshold_default": 0.5,
+  "threshold_max_f1_validation": 0.44,
+  "threshold_screening_recall_80_validation": 0.4,
+  "random_state": 42,
+  "sklearn_version": "1.8.0",
+  "csv_path_used": "nhanes_2017_2018_cardiometabolic_raw.csv",
+  "rows_raw": 9254,
+  "rows_adult20_eligible": 4994,
+  "positive_rate_unweighted_adult20": 0.5828994793752503,
+  "positive_rate_weighted_adult20": 0.5100625660300445,
+  "primary_test_metrics_weighted": [
+    {
+      "model": "logistic_regression",
+      "threshold": 0.5,
+      "accuracy": 0.7303552959721512,
+      "balanced_accuracy": 0.7303333931976501,
+      "precision": 0.7379587414757682,
+      "recall": 0.7133021067760807,
+      "f1": 0.7254209684531395,
+      "roc_auc": 0.8029281989930177,
+      "average_precision": 0.7757276817078314,
+      "brier": 0.1811600308434652,
+      "log_loss": 0.5415460053273288
+    },
+    {
+      "model": "random_forest",
+      "threshold": 0.5,
+      "accuracy": 0.7202663490258087,
+      "balanced_accuracy": 0.720280574910607,
+      "precision": 0.7149887946963444,
+      "recall": 0.7313424209152725,
+      "f1": 0.7230731528108454,
+      "roc_auc": 0.7889985719946543,
+      "average_precision": 0.7724358045844524,
+      "brier": 0.18656771221440757,
+      "log_loss": 0.553696950581015
+    },
+    {
+      "model": "baseline_prior",
+      "threshold": 0.5,
+      "accuracy": 0.4993569841420399,
+      "balanced_accuracy": 0.5,
+      "precision": 0.49935698414203994,
+      "recall": 1.0,
+      "f1": 0.6660948518911676,
+      "roc_auc": 0.5,
+      "average_precision": 0.4993569841420401,
+      "brier": 0.2502017419162999,
+      "log_loss": 0.6935508088846222
+    }
+  ]
+}
