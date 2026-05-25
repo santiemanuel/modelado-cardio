@@ -16,6 +16,11 @@ Esta primera iteración se centró en desarrollar un modelo para detectar **señ
 *   **Carga y validación:** Se cargó y validó la estructura del dataset `nhanes_2017_2018_cardiometabolic_raw.csv`, verificando la presencia de columnas esperadas y la unicidad de los identificadores.
 *   **Limpieza de códigos Especiales:** Se convirtieron los códigos de respuesta especiales de los cuestionarios (ej., 'Refused', 'Don't know') a `NaN` para una correcta interpretación numérica.
 *   **Recodificación de variables:** Se recodificaron variables categóricas como `sex` y `race_ethnicity` a formatos legibles y se derivó `age_group`.
+### Justificación de transformaciones y simplificación de las variables clínicas
+
+* **Transformaciones y simplificaciones de variables clínicas:** se realizaron considerando criterios clínicos, epidemiológicos y metodológicos. Se priorizó preservar categorías con significado clínico validado en la literatura, reducir ruido asociado a categorías poco representadas y mejorar la estabilidad estadística del modelo.
+La recodificación de variables categóricas como sex y race_ethnicity, así como la derivación de age_group, tuvieron como objetivo facilitar la interpretación epidemiológica y permitir análisis por subgrupos clínicamente relevantes. En el caso de la edad, la agrupación en rangos etarios responde a la conocida relación no lineal entre edad y riesgo cardiovascular, además de alinearse con estrategias de estratificación utilizadas en salud pública y medicina preventiva.
+Asimismo, ciertas simplificaciones buscaron reducir sparsity y evitar inestabilidad en categorías con baja frecuencia, mejorando la robustez del entrenamiento y la generalización del modelo. Estas decisiones priorizaron un balance entre capacidad predictiva, interpretabilidad clínica y reproducibilidad analítica.
 
 ### Pipelines de preprocesamiento
 
