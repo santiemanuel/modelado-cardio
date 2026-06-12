@@ -221,3 +221,40 @@ npm test
 * El resultado es orientativo y no reemplaza una medición de presión arterial ni una consulta médica.
 
 Aunque otros modelos podrían tener un rendimiento ligeramente superior en otras métricas, si el objetivo principal es reducir los falsos negativos, la regresión logística es la opción preferida por su mayor recall.
+
+# 4) Reporte de Evaluación de Modelos
+
+A continuación se detalla el rendimiento de los modelos predictivos evaluados sobre el conjunto de prueba (test set), utilizando las métricas almacenadas en `nhanes_case1_hypertension_test_metrics_v1.csv` y el análisis de umbrales en `nhanes_case1_hypertension_thresholds_v1.csv`.
+
+### 4.1. Métricas Globales de Prueba (Test Metrics)
+
+Se evaluaron tres enfoques distintos con un umbral de decisión por defecto de 0.5:
+
+| Modelo | Exactitud (Accuracy) | Precisión (Precision) | Sensibilidad (Recall) | F1-Score | ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Regresión Logística** | 73.0% | 73.8% | 71.3% | 72.5% | 80.3% |
+| **Random Forest** | 72.0% | 71.5% | 73.1% | 72.3% | 78.9% |
+| **Línea Base (Baseline)** | 49.9% | 49.9% | 100.0% | 66.6% | 50.0% |
+
+**Interpretación de las métricas:**
+*   **Exactitud (Accuracy):** La regresión logística logra clasificar correctamente al 73.0% de los pacientes (tanto sanos como con posible hipertensión).
+*   **Sensibilidad (Recall):** Representa la proporción de casos reales de hipertensión que el modelo logró detectar. El Random Forest obtuvo un 73.1% frente a un 71.3% de la regresión logística (usando el umbral estándar de 0.5).
+*   **Precisión:** De todos los pacientes que el modelo predijo con hipertensión, el 73.8% (para regresión logística) realmente la padecían, siendo el modelo más preciso.
+*   **ROC-AUC:** Con un 80.3%, la regresión logística demuestra una excelente capacidad general para distinguir entre las dos clases, superando al Random Forest (78.9%).
+
+*Nota: La línea base (baseline) asume siempre la clase mayoritaria (o positiva en este caso), lo que da un recall del 100% pero una utilidad discriminativa nula (ROC-AUC de 0.5).*
+
+### 4.2. Análisis de Umbrales de Decisión (Thresholds)
+
+El análisis de diferentes puntos de corte (umbrales) permite ajustar el comportamiento del modelo para priorizar la detección (Recall) o la certeza (Precisión). Los datos extraídos de `nhanes_case1_hypertension_thresholds_v1.csv` muestran el clásico compromiso (trade-off) entre ambas métricas.
+
+A continuación, se destacan algunos umbrales clave y su impacto en el rendimiento:
+
+| Umbral (Threshold) | Sensibilidad (Recall) | Precisión (Precision) | F1-Score | Contexto Clínico |
+| :---: | :---: | :---: | :---: | :--- |
+| **0.20** | 92.7% | 56.7% | 70.3% | **Alta detección:** Se capturan casi todos los casos positivos. Ideal para un tamizaje inicial riguroso donde no se quiere dejar pasar a ningún paciente en riesgo, a costa de más falsas alarmas (falsos positivos). |
+| **0.36** | 81.2% | 63.2% | 71.1% | **Balance preventivo:** Un buen punto intermedio que mantiene una alta detección (>80%) con una precisión razonable, optimizando los recursos médicos posteriores. |
+| **0.50** | 73.2% | 69.8% | 71.5% | **Punto de corte por defecto:** Balance tradicional, aunque implica perder alrededor de un 26.8% de casos positivos reales (falsos negativos). |
+| **0.70** | 50.0% | 76.4% | 60.5% | **Alta certeza:** El modelo solo alerta cuando está muy seguro. Aumenta la precisión pero omite a la mitad de los pacientes reales con hipertensión. |
+
+
