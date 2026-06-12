@@ -55,7 +55,7 @@ Es una decisión fundamental para este proyecto, dada la naturaleza del dataset 
 
  Las variables `BPXSY*`, `BPXDI*`, `sbp_mean`, `dbp_mean`, `BPQ020`, `BPQ050A`, y `hbp_med_current` fueron explícitamente prohibidas como características de entrada para el modelo. 
  
- Esta fue una decisión crítica para evitar la **fuga de información (data leakage)**. Si estas variables se incluyeran, el modelo aprendería a predecir la hipertensión usando la misma información con la que se define la hipertensión, volviéndolo inutilmente preciso para el objetivo del proyecto: detectar *señales indirectas* de hipertensión en personas que *no* han sido medidas o diagnosticadas directamente.
+ Esta fue una decisión crítica para evitar la **fuga de información (data leakage)**. Si estas variables se incluyeran, el modelo aprendería a predecir la hipertensión usando la misma información con la que se define la hipertensión, volviéndolo inútilmente preciso para el objetivo del proyecto: detectar *señales indirectas* de hipertensión en personas que *no* han sido medidas o diagnosticadas directamente.
 
 ### Exclusión de la variable `INDFMPIR`:
 
@@ -129,5 +129,95 @@ Según las métricas ponderadas en el conjunto de prueba (test_metrics_weighted)
 *   `Balanced Accuracy`: 0.7303
 *   `Brier Score`: 0.1706
 *   `Log Loss`: 0.4682
+
+---
+
+# 3) App local FastAPI + React
+
+Esta iteración agrega una app local con:
+
+* `backend/`: API FastAPI que carga el modelo entrenado desde `backend/app/models/model.joblib`.
+* `frontend/`: app React + Vite + TypeScript para completar el formulario y consultar la API.
+* `docs/PRD.md`: PRD de la versión inicial.
+
+La API no usa autenticación. Incluye rate limit por IP para evitar saturar el servidor local.
+
+## Requisitos
+
+* Python compatible con las dependencias del modelo.
+* Node.js y npm.
+* El artefacto `backend/app/models/model.joblib` debe existir. Ya fue copiado desde `metrics/nhanes_case1_hypertension_logistic_regression_pipeline_v1.joblib`.
+
+## Levantar backend
+
+Desde la raiz del repo:
+
+```bash
+python -m venv backend/.venv
+backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
+backend/.venv/Scripts/python -m uvicorn app.main:app --app-dir backend --reload
+```
+
+En PowerShell tambien se puede usar:
+
+```powershell
+python -m venv backend/.venv
+.\backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
+```
+
+La API queda disponible en `http://127.0.0.1:8000`.
+
+Probar salud:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Ejemplo de predicción:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  -d "{\"RIDAGEYR\":66,\"BMXBMI\":31.7,\"BMXWAIST\":101.8,\"LBXTC\":157,\"LBDHDD\":60,\"LBXGH\":6.2,\"sex\":\"Female\",\"race_ethnicity\":\"Non-Hispanic Black\",\"current_smoker\":0.0}"
+```
+
+## Levantar frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+El frontend queda disponible en `http://127.0.0.1:5173`.
+
+Si la API corre en otra URL, crear `frontend/.env.local` con:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+## Ejecutar tests
+
+Backend:
+
+```bash
+backend/.venv/Scripts/python -m pytest backend/tests
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm test
+```
+
+## Notas de producto
+
+* `INDFMPIR` no se solicita ni se muestra en el frontend.
+* El backend agrega `INDFMPIR` como valor faltante para que el pipeline lo impute internamente.
+* Todo texto visible para el usuario debe mantenerse en español correcto, con tildes y `ñ` cuando corresponda.
+* El resultado es orientativo y no reemplaza una medición de presión arterial ni una consulta médica.
 
 Aunque otros modelos podrían tener un rendimiento ligeramente superior en otras métricas, si el objetivo principal es reducir los falsos negativos, la regresión logística es la opción preferida por su mayor recall.
