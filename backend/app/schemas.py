@@ -1,0 +1,50 @@
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+Sex = Literal["Female", "Male"]
+RaceEthnicity = Literal[
+    "Mexican American",
+    "Non-Hispanic Asian",
+    "Non-Hispanic Black",
+    "Non-Hispanic White",
+    "Other Hispanic",
+    "Other Race / Multi-Racial",
+]
+CurrentSmoker = Literal[0.0, 1.0]
+
+
+class PredictionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    RIDAGEYR: int = Field(..., ge=20, le=120, description="Age in years")
+    BMXBMI: float = Field(..., ge=10, le=80, description="Body mass index")
+    BMXWAIST: float = Field(..., ge=40, le=220, description="Waist circumference in cm")
+    LBXTC: float = Field(..., ge=50, le=500, description="Total cholesterol")
+    LBDHDD: float = Field(..., ge=5, le=200, description="HDL cholesterol")
+    LBXGH: float = Field(..., ge=3, le=20, description="Glycohemoglobin")
+    sex: Sex
+    race_ethnicity: RaceEthnicity
+    current_smoker: CurrentSmoker
+
+
+class PredictionResponse(BaseModel):
+    probability: float
+    threshold: float
+    prediction: int
+    risk_label: str
+    context: str
+    model_name: str
+
+
+class HealthResponse(BaseModel):
+    status: str
+    model_loaded: bool
+
+
+class ModelInfoResponse(BaseModel):
+    model_name: str
+    target: str
+    threshold_default: float
+    features: list[str]
