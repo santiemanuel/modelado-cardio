@@ -1,10 +1,11 @@
+import logoImage from "../assets/landing/logo.png";
 import { assessmentRoute, navLinks } from "./landingContent";
 
 export function LandingHeader() {
   return (
     <header className="site-header" aria-label="Navegación principal">
       <a className="brand-mark" href="/" aria-label="Inicio">
-        CardioSeñales
+        <img src={logoImage} alt="" />
       </a>
       <nav className="site-nav" aria-label="Secciones">
         {navLinks.map((link) => (

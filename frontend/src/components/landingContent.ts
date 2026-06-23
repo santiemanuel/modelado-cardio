@@ -1,5 +1,10 @@
 import consultationImage from "../assets/landing/cardio-consultation.png";
 import routineImage from "../assets/landing/cardio-routine.png";
+import clinicalReviewImage from "../assets/landing/clinical-review.png";
+import habitLogImage from "../assets/landing/habit-log.png";
+import bloodPressureImage from "../assets/landing/hero-blood-pressure.png";
+import preventionRoutineImage from "../assets/landing/prevention-routine.png";
+import vascularPressureImage from "../assets/landing/vascular-pressure-abstract.png";
 import vascularImage from "../assets/landing/vascular-signals.png";
 
 export const assessmentRoute = "/evaluar";
@@ -20,21 +25,21 @@ export const heroMetrics = [
 export const heroImages = [
   {
     className: "pin-card pin-tall",
+    src: bloodPressureImage,
+    alt: "Persona midiendo su presión arterial en casa con un tensiómetro digital",
+    caption: "Medición domiciliaria",
+  },
+  {
+    className: "pin-card pin-square",
     src: consultationImage,
     alt: "Profesional de salud revisando señales cardiometabólicas con un paciente",
     caption: "Consulta con datos",
   },
   {
-    className: "pin-card pin-square",
-    src: routineImage,
-    alt: "Tensiómetro digital, cuaderno y hábitos saludables sobre una mesa clara",
-    caption: "Medición en rutina",
-  },
-  {
     className: "pin-card pin-wide",
-    src: vascularImage,
-    alt: "Ilustración médica de arterias y señales de presión arterial",
-    caption: "Señales vasculares",
+    src: vascularPressureImage,
+    alt: "Ilustración médica de flujo arterial y presión vascular",
+    caption: "Flujo vascular",
   },
 ];
 
@@ -91,10 +96,10 @@ export const standardsCards = [
     description: "Anotar valores, horarios y contexto evita depender de una única lectura.",
   },
   {
-    image: consultationImage,
-    alt: "Consulta profesional sobre señales cardiometabólicas",
-    title: "Consultar a tiempo",
-    description: "El resultado orientativo sirve para preparar preguntas, no para medicarse solo.",
+    image: preventionRoutineImage,
+    alt: "Tensiómetro, frutas, agua y calzado deportivo como parte de una rutina preventiva",
+    title: "Sostener hábitos",
+    description: "Movimiento, descanso y alimentación ayudan a que el registro tenga contexto.",
   },
 ];
 
@@ -121,8 +126,8 @@ export const careMosaicItems = [
   {
     type: "image",
     className: "pin-card mosaic-wide",
-    image: consultationImage,
-    alt: "Profesional de salud y paciente revisando información de prevención",
+    image: clinicalReviewImage,
+    alt: "Profesional de salud y paciente revisando tendencias de presión arterial en una tablet",
     caption: "Conversación clínica",
   },
   {
@@ -134,8 +139,8 @@ export const careMosaicItems = [
   {
     type: "image",
     className: "pin-card mosaic-small",
-    image: routineImage,
-    alt: "Tensiómetro y elementos de hábitos saludables",
+    image: habitLogImage,
+    alt: "Tensiómetro, libreta de registro, agua y calzado para una rutina saludable",
     caption: "Hábitos medibles",
   },
 ] as const;

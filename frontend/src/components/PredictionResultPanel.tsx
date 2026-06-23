@@ -183,11 +183,6 @@ export function PredictionResultPanel({
               <dd>{result.probability.toFixed(3)}</dd>
             </div>
           </dl>
-
-          <div className="context">
-            <span>Contexto del resultado</span>
-            <p>{result.context}</p>
-          </div>
         </div>
       )}
     </aside>
