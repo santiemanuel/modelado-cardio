@@ -1,0 +1,208 @@
+export type SourceContent = {
+  id: string;
+  title: string;
+  publisher: string;
+  url: string;
+  lastCheckedAt: string;
+  usage: string;
+};
+
+export const publicSources: SourceContent[] = [
+  {
+    id: "S1",
+    title: "About High Blood Pressure",
+    publisher: "CDC",
+    url: "https://www.cdc.gov/high-blood-pressure/about/index.html",
+    lastCheckedAt: "2026-06-24",
+    usage: "Alcance educativo sobre presión arterial alta y ausencia frecuente de síntomas.",
+  },
+  {
+    id: "S2",
+    title: "Measuring Your Blood Pressure",
+    publisher: "CDC",
+    url: "https://www.cdc.gov/high-blood-pressure/measure/index.html",
+    lastCheckedAt: "2026-06-24",
+    usage: "Guía de medición y registro de presión arterial.",
+  },
+  {
+    id: "S3",
+    title: "Understanding Blood Pressure Readings",
+    publisher: "American Heart Association",
+    url: "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings",
+    lastCheckedAt: "2026-06-24",
+    usage: "Categorías de presión arterial y confirmación profesional del diagnóstico.",
+  },
+  {
+    id: "S4",
+    title: "About Body Mass Index (BMI)",
+    publisher: "CDC",
+    url: "https://www.cdc.gov/bmi/about/index.html",
+    lastCheckedAt: "2026-06-24",
+    usage: "Definición, cálculo y límites del IMC.",
+  },
+  {
+    id: "S5",
+    title: "About Cholesterol",
+    publisher: "CDC",
+    url: "https://www.cdc.gov/cholesterol/about/index.html",
+    lastCheckedAt: "2026-06-24",
+    usage: "Colesterol total, HDL y perfil lipídico.",
+  },
+  {
+    id: "S6",
+    title: "A1C Test for Diabetes and Prediabetes",
+    publisher: "CDC",
+    url: "https://www.cdc.gov/diabetes/diabetes-testing/prediabetes-a1c-test.html",
+    lastCheckedAt: "2026-06-24",
+    usage: "Definición educativa de HbA1c.",
+  },
+  {
+    id: "S7",
+    title: "Heart-Healthy Living: Aim for a Healthy Weight",
+    publisher: "NHLBI",
+    url: "https://www.nhlbi.nih.gov/health/heart-healthy-living/healthy-weight",
+    lastCheckedAt: "2026-06-24",
+    usage: "Medición de cintura y contexto cardiometabólico.",
+  },
+  {
+    id: "S8",
+    title: "NHANES 2017-2018 Overview",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/overview.aspx?BeginYear=2017",
+    lastCheckedAt: "2026-06-24",
+    usage: "Descripción del ciclo NHANES 2017-2018.",
+  },
+  {
+    id: "S9",
+    title: "DEMO_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/DEMO_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Edad, sexo reportado, grupo étnico reportado y pesos muestrales.",
+  },
+  {
+    id: "S10",
+    title: "BMX_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/BMX_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Peso, altura, cintura e IMC.",
+  },
+  {
+    id: "S11",
+    title: "BPX_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/BPX_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Mediciones de presión arterial usadas para construir la etiqueta, no como entrada.",
+  },
+  {
+    id: "S12",
+    title: "BPQ_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/BPQ_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Preguntas de presión alta y medicación usadas solo en definición metodológica.",
+  },
+  {
+    id: "S13",
+    title: "TCHOL_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/TCHOL_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Colesterol total.",
+  },
+  {
+    id: "S14",
+    title: "HDL_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/HDL_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Colesterol HDL.",
+  },
+  {
+    id: "S15",
+    title: "GHB_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/GHB_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Hemoglobina glicosilada.",
+  },
+  {
+    id: "S16",
+    title: "SMQ_J",
+    publisher: "CDC/NCHS",
+    url: "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/SMQ_J.htm",
+    lastCheckedAt: "2026-06-24",
+    usage: "Tabaquismo actual.",
+  },
+  {
+    id: "S17",
+    title: "Laboratorio del Hospital Público Materno Infantil",
+    publisher: "Gobierno de Salta",
+    url: "https://www.salta.gob.ar/prensa/noticias/en-el-ultimo-anio-el-laboratorio-del-materno-infantil-realizo-casi-un-millon-de-analisis-94645",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S18",
+    title: "Carta de servicios Hospital San Bernardo",
+    publisher: "Boletín Oficial de Salta",
+    url: "https://boletinoficialsalta.gob.ar/instrumento.php?cXdlcnR5dGFibGE9UnwyMTFELzA2JmRhdGE9MTc0MTRxd2VydHk=",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S19",
+    title: "Hospital Señor del Milagro",
+    publisher: "Gobierno de Salta",
+    url: "https://www.salta.gob.ar/prensa/noticias/el-hospital-del-senior-del-milagro-cumple-130-anios-junto-a-los-saltenios-101089",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S20",
+    title: "Laboratorio Bioquímico",
+    publisher: "Hospital Dr. Arturo Oñativia",
+    url: "https://www.hospitalonativia.gob.ar/?page_id=200",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S21",
+    title: "Laboratorio",
+    publisher: "CIACLAB",
+    url: "https://ciacsalta.com.ar/laboratorio/",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S22",
+    title: "Laboratorio",
+    publisher: "MAS Medicina Ambulatoria Salta",
+    url: "https://massalta.com.ar/laboratorio/",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S23",
+    title: "Clínica del Centro Salta",
+    publisher: "Clínica del Centro",
+    url: "https://clinicadelcentrosalta.com.ar/",
+    lastCheckedAt: "2026-06-24",
+    usage: "Recurso local de laboratorio.",
+  },
+  {
+    id: "S24",
+    title: "Protección de datos personales",
+    publisher: "AAIP Argentina",
+    url: "https://www.argentina.gob.ar/aaip/datospersonales",
+    lastCheckedAt: "2026-06-24",
+    usage: "Marco general de privacidad y protección de datos.",
+  },
+];
+
+export function getSourcesById(sourceIds: string[]) {
+  const requested = new Set(sourceIds);
+  return publicSources.filter((source) => requested.has(source.id));
+}

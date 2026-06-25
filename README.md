@@ -146,7 +146,7 @@ La API no usa autenticación. Incluye rate limit por IP para evitar saturar el s
 
 * Python compatible con las dependencias del modelo.
 * Node.js y npm.
-* El artefacto `backend/app/models/model.joblib` debe existir. Ya fue copiado desde `metrics/nhanes_case1_hypertension_logistic_regression_pipeline_v1.joblib`.
+* El artefacto `backend/app/models/model.joblib` debe existir. La copia operativa actual proviene de `metrics/nhanes_case1_hypertension_logistic_regression_no_indfmpir_pipeline_no_indfmpir_v2.joblib`.
 
 ## Levantar backend
 
@@ -174,12 +174,62 @@ Probar salud:
 curl http://127.0.0.1:8000/health
 ```
 
+Información del modelo activo:
+
+```bash
+curl http://127.0.0.1:8000/model-info
+curl http://127.0.0.1:8000/thresholds
+```
+
 Ejemplo de predicción:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/predict \
   -H "Content-Type: application/json" \
   -d "{\"RIDAGEYR\":66,\"BMXBMI\":31.7,\"BMXWAIST\":101.8,\"LBXTC\":157,\"LBDHDD\":60,\"LBXGH\":6.2,\"sex\":\"Female\",\"race_ethnicity\":\"Non-Hispanic Black\",\"current_smoker\":0.0}"
+```
+
+Ejemplo de predicción simple sin laboratorio reciente:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict-simple \
+  -H "Content-Type: application/json" \
+  -d "{\"RIDAGEYR\":66,\"BMXBMI\":31.7,\"BMXWAIST\":101.8,\"sex\":\"Female\",\"race_ethnicity\":\"Non-Hispanic Black\",\"current_smoker\":0.0}"
+```
+
+El modo simple no usa colesterol total, HDL ni HbA1c. El resultado debe interpretarse con más cautela porque se calcula con menos información.
+
+### Configuración CORS
+
+Por defecto, el backend acepta `http://localhost:5173` y `http://127.0.0.1:5173`.
+
+Para previews o puertos alternativos, definir una lista separada por coma:
+
+```powershell
+$env:CORS_ALLOW_ORIGINS="http://localhost:5173,http://127.0.0.1:5174,https://preview.example"
+.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
+```
+
+### Modelos y artefactos
+
+El modelo operativo actual es `case1-logreg-no-indfmpir-v2`, una regresión logística entrenada sin `INDFMPIR`. La aplicación no necesita inferir, enviar ni completar esa variable para el modelo activo.
+
+También queda disponible `case1-logreg-simple-no-lab-v2`, una variante simple sin colesterol total, HDL ni HbA1c para usuarios sin laboratorio reciente.
+
+Archivos principales:
+
+* `backend/app/models/model.joblib`
+* `backend/app/models/model_metadata.json`
+* `backend/app/models/simple_model.joblib`
+* `backend/app/models/simple_model_metadata.json`
+* `backend/app/models/model_registry.json`
+
+Los artefactos versionados de origen quedan en `metrics/`.
+
+Para regenerar las variantes:
+
+```powershell
+.\venv\Scripts\python.exe scripts\train_model_variants.py
 ```
 
 ## Levantar frontend
@@ -216,7 +266,8 @@ npm test
 ## Notas de producto
 
 * `INDFMPIR` no se solicita ni se muestra en el frontend.
-* El backend agrega `INDFMPIR` como valor faltante para que el pipeline lo impute internamente.
+* El modelo operativo actual no contiene `INDFMPIR` en sus features.
+* `ModelService` conserva una compatibilidad defensiva para artefactos legacy que sí esperen `INDFMPIR`, pero esa rama no se usa con `case1-logreg-no-indfmpir-v2`.
 * Todo texto visible para el usuario debe mantenerse en español correcto, con tildes y `ñ` cuando corresponda.
 * El resultado es orientativo y no reemplaza una medición de presión arterial ni una consulta médica.
 
@@ -224,37 +275,36 @@ Aunque otros modelos podrían tener un rendimiento ligeramente superior en otras
 
 # 4) Reporte de Evaluación de Modelos
 
-A continuación se detalla el rendimiento de los modelos predictivos evaluados sobre el conjunto de prueba (test set), utilizando las métricas almacenadas en `nhanes_case1_hypertension_test_metrics_v1.csv` y el análisis de umbrales en `nhanes_case1_hypertension_thresholds_v1.csv`.
+A continuación se detalla el rendimiento de los modelos operativos v2 evaluados sobre el conjunto de prueba ponderado. Las métricas completas quedan versionadas en `metrics/` y copiadas a la metadata operativa de `backend/app/models/`.
 
 ### 4.1. Métricas Globales de Prueba (Test Metrics)
 
-Se evaluaron tres enfoques distintos con un umbral de decisión por defecto de 0.5:
+Se evaluaron dos variantes con un umbral de decisión por defecto de 0.5:
 
 | Modelo | Exactitud (Accuracy) | Precisión (Precision) | Sensibilidad (Recall) | F1-Score | ROC-AUC |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Regresión Logística** | 73.0% | 73.8% | 71.3% | 72.5% | 80.3% |
-| **Random Forest** | 72.0% | 71.5% | 73.1% | 72.3% | 78.9% |
-| **Línea Base (Baseline)** | 49.9% | 49.9% | 100.0% | 66.6% | 50.0% |
+| **Base sin INDFMPIR** (`case1-logreg-no-indfmpir-v2`) | 72.1% | 70.7% | 72.6% | 71.6% | 78.0% |
+| **Simple sin laboratorio** (`case1-logreg-simple-no-lab-v2`) | 71.9% | 71.1% | 75.3% | 73.1% | 78.8% |
 
 **Interpretación de las métricas:**
-*   **Exactitud (Accuracy):** La regresión logística logra clasificar correctamente al 73.0% de los pacientes (tanto sanos como con posible hipertensión).
-*   **Sensibilidad (Recall):** Representa la proporción de casos reales de hipertensión que el modelo logró detectar. El Random Forest obtuvo un 73.1% frente a un 71.3% de la regresión logística (usando el umbral estándar de 0.5).
-*   **Precisión:** De todos los pacientes que el modelo predijo con hipertensión, el 73.8% (para regresión logística) realmente la padecían, siendo el modelo más preciso.
-*   **ROC-AUC:** Con un 80.3%, la regresión logística demuestra una excelente capacidad general para distinguir entre las dos clases, superando al Random Forest (78.9%).
+*   **Modelo base sin INDFMPIR:** es el modelo principal de la aplicación completa. Usa laboratorio reciente, mantiene trazabilidad de versión y elimina la variable socioeconómica `INDFMPIR` del pipeline.
+*   **Modelo simple sin laboratorio:** permite una evaluación opcional cuando la persona no tiene colesterol total, HDL ni HbA1c recientes. Trabaja con menos información, por lo que la UI y el PDF advierten que la precisión puede disminuir.
+*   **Comparación:** las métricas son cercanas entre variantes, pero no deben interpretarse como validación clínica local. El modo simple existe para reducir fricción, no para reemplazar al modo completo.
 
-*Nota: La línea base (baseline) asume siempre la clase mayoritaria (o positiva en este caso), lo que da un recall del 100% pero una utilidad discriminativa nula (ROC-AUC de 0.5).*
+*Nota: estos valores provienen del split de prueba definido por `scripts/train_model_variants.py` y deben revisarse si se reentrenan artefactos o cambia el dataset fuente.*
 
 ### 4.2. Análisis de Umbrales de Decisión (Thresholds)
 
-El análisis de diferentes puntos de corte (umbrales) permite ajustar el comportamiento del modelo para priorizar la detección (Recall) o la certeza (Precisión). Los datos extraídos de `nhanes_case1_hypertension_thresholds_v1.csv` muestran el clásico compromiso (trade-off) entre ambas métricas.
+El análisis de diferentes puntos de corte permite ajustar el comportamiento del modelo para priorizar detección o precisión. El backend expone los thresholds documentados del modelo activo en `/thresholds`.
 
-A continuación, se destacan algunos umbrales clave y su impacto en el rendimiento:
+Thresholds disponibles para `case1-logreg-no-indfmpir-v2`:
 
-| Umbral (Threshold) | Sensibilidad (Recall) | Precisión (Precision) | F1-Score | Contexto Clínico |
-| :---: | :---: | :---: | :---: | :--- |
-| **0.20** | 92.7% | 56.7% | 70.3% | **Alta detección:** Se capturan casi todos los casos positivos. Ideal para un tamizaje inicial riguroso donde no se quiere dejar pasar a ningún paciente en riesgo, a costa de más falsas alarmas (falsos positivos). |
-| **0.36** | 81.2% | 63.2% | 71.1% | **Balance preventivo:** Un buen punto intermedio que mantiene una alta detección (>80%) con una precisión razonable, optimizando los recursos médicos posteriores. |
-| **0.50** | 73.2% | 69.8% | 71.5% | **Punto de corte por defecto:** Balance tradicional, aunque implica perder alrededor de un 26.8% de casos positivos reales (falsos negativos). |
-| **0.70** | 50.0% | 76.4% | 60.5% | **Alta certeza:** El modelo solo alerta cuando está muy seguro. Aumenta la precisión pero omite a la mitad de los pacientes reales con hipertensión. |
+| Nombre | Umbral | Uso |
+| :--- | :---: | :--- |
+| `default` | 0.50 | Umbral operativo usado por `/predict`. |
+| `max_f1_validation` | 0.42 | Umbral con mayor F1 ponderado en validación. |
+| `screening_recall_80_validation` | 0.48 | Umbral de validación orientado a recall ponderado de al menos 0.80. |
+
+Por ahora la app muestra thresholds y tramos comunicacionales, pero no permite que el usuario cambie el umbral operativo desde el formulario.
 
 

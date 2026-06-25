@@ -2,6 +2,7 @@ import type { FocusEvent, FormEvent, KeyboardEvent as ReactKeyboardEvent } from 
 import { useEffect, useRef, useState } from "react";
 
 import type { PredictionPayload } from "../api";
+import { buttonLabels, measurementHelp, presetSafetyCopy } from "../content/evaluationContent";
 import {
   calculateBmi,
   fieldGroups,
@@ -11,13 +12,16 @@ import {
   raceOptions,
   testProfiles,
   validateNumericFields,
+  validateNumericFieldMap,
 } from "./predictionFormConfig";
-import type { FormState, NumericFieldKey } from "./predictionFormConfig";
+import type { EvaluationMode, FormState, NumericFieldKey } from "./predictionFormConfig";
 
 type PredictionFormProps = {
   form: FormState;
   loading: boolean;
+  mode: EvaluationMode;
   onApplyPreset: (form: FormState) => void;
+  onModeChange: (mode: EvaluationMode) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onFormChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   onReset: () => void;
@@ -50,7 +54,7 @@ const formSteps = [
     title: "Contexto",
     shortLabel: "Revisión y envío",
     heading: "Contexto declarado",
-    description: "Confirmá las categorías usadas por el dataset y enviá la evaluación orientativa.",
+    description: "Confirmá las categorías usadas por el modelo y enviá la evaluación orientativa.",
   },
 ] as const;
 
@@ -171,13 +175,16 @@ function ContextDropdown<T extends string>({
 export function PredictionForm({
   form,
   loading,
+  mode,
   onApplyPreset,
+  onModeChange,
   onSubmit,
   onFormChange,
   onReset,
 }: PredictionFormProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<NumericFieldKey, string>>>({});
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [openContextDropdown, setOpenContextDropdown] = useState<"sex" | "race" | null>(null);
   const modalCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -185,10 +192,14 @@ export function PredictionForm({
   const bodyGroup = fieldGroups[0];
   const labGroup = fieldGroups[1];
   const bodyComplete = areFieldsComplete(bodyGroup.fields);
-  const labComplete = areFieldsComplete(labGroup.fields);
+  const labComplete = mode === "simple" || areFieldsComplete(labGroup.fields);
   const [debouncedBmi, setDebouncedBmi] = useState<number | null>(() => calculateBmi(form));
   const previousBmiInputsRef = useRef({ weight: form.BMXWT, height: form.BMXHT });
   const currentStep = formSteps[activeStep];
+  const currentStepDescription =
+    mode === "simple" && activeStep === 2
+      ? "Usá el modo simple cuando no tengas laboratorio reciente. El resultado usa menos datos."
+      : currentStep.description;
 
   useEffect(() => {
     const previousBmiInputs = previousBmiInputsRef.current;
@@ -258,44 +269,59 @@ export function PredictionForm({
       return;
     }
     setStepError(null);
+    setFieldErrors({});
     setActiveStep(stepIndex);
   }
 
   function goToNextStep() {
     if (activeStep === 1) {
+      const errors = validateNumericFieldMap(form, bodyGroup.fields);
       const error = getFieldError(bodyGroup.fields);
       if (error) {
-        setStepError(error);
+        setFieldErrors(errors);
+        setStepError("Revisá los campos marcados antes de continuar.");
         return;
       }
     }
 
-    if (activeStep === 2) {
+    if (activeStep === 2 && mode === "complete") {
+      const errors = validateNumericFieldMap(form, labGroup.fields);
       const error = getFieldError(labGroup.fields);
       if (error) {
-        setStepError(error);
+        setFieldErrors(errors);
+        setStepError("Revisá los campos marcados antes de continuar.");
         return;
       }
     }
 
     setStepError(null);
+    setFieldErrors({});
     setActiveStep((current) => Math.min(current + 1, formSteps.length - 1));
   }
 
   function goToPreviousStep() {
     setStepError(null);
+    setFieldErrors({});
     setActiveStep((current) => Math.max(current - 1, 0));
   }
 
   function applyPreset(values: FormState) {
     onApplyPreset(values);
     setStepError(null);
+    setFieldErrors({});
     setActiveStep(1);
+  }
+
+  function handleModeChange(nextMode: EvaluationMode) {
+    onModeChange(nextMode);
+    setStepError(null);
+    setFieldErrors({});
   }
 
   function resetPagedForm() {
     onReset();
     setStepError(null);
+    setFieldErrors({});
     setActiveStep(0);
   }
 
@@ -310,14 +336,16 @@ export function PredictionForm({
           <div className="lab-directory-callout">
             <div>
               <strong>¿No conocés estos datos?</strong>
-              <span>Consultá centros de Salta Capital donde suelen realizar análisis de rutina.</span>
+              <span>
+                Buscá colesterol total, HDL y HbA1c; confirmá requisitos antes de concurrir.
+              </span>
             </div>
             <button
               className="directory-button"
               type="button"
               onClick={() => setIsDirectoryOpen(true)}
             >
-              Directorio
+              {buttonLabels.viewDirectory}
             </button>
           </div>
         ) : null}
@@ -328,38 +356,56 @@ export function PredictionForm({
               return null;
             }
             const inputId = `field-${field.key}`;
+            const error = fieldErrors[field.key];
+            const errorId = `${inputId}-error`;
+            const describedBy = error
+              ? `${inputId}-hint ${inputId}-unit ${errorId}`
+              : `${inputId}-hint ${inputId}-unit`;
             return (
-              <div className="field" key={field.key}>
+              <div className={`field ${error ? "field-invalid" : ""}`} key={field.key}>
                 <label htmlFor={inputId}>{field.label}</label>
-                <input
-                  id={inputId}
-                  type="number"
-                  inputMode="decimal"
-                  min={field.min}
-                  max={field.max}
-                  step={field.step}
-                  value={form[field.key]}
-                  aria-describedby={`${inputId}-hint`}
-                  disabled={loading}
-                  onChange={(event) => {
-                    setStepError(null);
-                    onFormChange(field.key, event.target.value);
-                  }}
-                />
+                <div className="unit-input">
+                  <input
+                    id={inputId}
+                    type="text"
+                    inputMode="decimal"
+                    value={form[field.key]}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={describedBy}
+                    disabled={loading}
+                    onChange={(event) => {
+                      setStepError(null);
+                      setFieldErrors((current) => ({ ...current, [field.key]: undefined }));
+                      onFormChange(field.key, event.target.value);
+                    }}
+                  />
+                  <span id={`${inputId}-unit`}>{field.unit}</span>
+                </div>
                 <small id={`${inputId}-hint`}>{field.hint}</small>
+                {error ? (
+                  <small className="field-error" id={errorId} role="alert">
+                    {error}
+                  </small>
+                ) : null}
               </div>
             );
           })}
         </div>
         {group.fields.includes("BMXWT") && group.fields.includes("BMXHT") ? (
-          <div className="bmi-calculation" aria-live="polite">
-            <span>IMC calculado</span>
-            <strong>
-              {debouncedBmi === null
-                ? formatBmi(debouncedBmi)
-                : `${formatBmi(debouncedBmi)} kg/m²`}
-            </strong>
-            <small>Se actualiza automáticamente con peso y altura.</small>
+          <div className="measurement-help-grid">
+            <div className="bmi-calculation" aria-live="polite">
+              <span>IMC calculado</span>
+              <strong>
+                {debouncedBmi === null
+                  ? formatBmi(debouncedBmi)
+                  : `${formatBmi(debouncedBmi)} kg/m²`}
+              </strong>
+              <small>{measurementHelp.bmi}</small>
+            </div>
+            <aside className="measurement-help-card" aria-label="Cómo medir cintura">
+              <strong>Cómo medir cintura</strong>
+              <p>{measurementHelp.waist}</p>
+            </aside>
           </div>
         ) : null}
       </fieldset>
@@ -390,27 +436,30 @@ export function PredictionForm({
           <span>Paso {activeStep + 1} de {formSteps.length}</span>
           <strong>{currentStep.heading}</strong>
         </div>
-        <p>{currentStep.description}</p>
+        <p>{currentStepDescription}</p>
       </div>
 
       <ol className="form-stepper" aria-label="Progreso del formulario">
         {formSteps.map((step, index) => {
           const isActive = index === activeStep;
           const isLocked = !canOpenStep(index);
+          const stepTitle = mode === "simple" && step.id === "lab" ? "Sin laboratorio" : step.title;
+          const stepLabel =
+            mode === "simple" && step.id === "lab" ? "Modelo simple" : step.shortLabel;
           return (
             <li key={step.id}>
               <button
                 className="step-button"
                 type="button"
-                aria-label={`Paso ${index + 1}: ${step.title}. ${step.shortLabel}`}
+                aria-label={`Paso ${index + 1}: ${stepTitle}. ${stepLabel}`}
                 aria-current={isActive ? "step" : undefined}
                 disabled={loading || isLocked}
                 onClick={() => goToStep(index)}
               >
                 <span className="step-index">{index + 1}</span>
                 <span>
-                  <strong>{step.title}</strong>
-                  <em>{step.shortLabel}</em>
+                  <strong>{stepTitle}</strong>
+                  <em>{stepLabel}</em>
                 </span>
               </button>
             </li>
@@ -420,36 +469,70 @@ export function PredictionForm({
 
       <div className="form-step-panel">
         {activeStep === 0 ? (
-          <div className="preset-grid" aria-label="Casos de prueba">
-            {testProfiles.map((profile) => (
+          <div className="preset-step">
+            <div className="mode-selector" aria-label="Elegir tipo de evaluación">
               <button
-                className="preset-button"
+                className={mode === "complete" ? "mode-option mode-option-active" : "mode-option"}
                 type="button"
                 disabled={loading}
-                key={profile.id}
-                onClick={() => applyPreset(profile.values)}
+                onClick={() => handleModeChange("complete")}
               >
-                <strong>{profile.label}</strong>
-                <span>{profile.description}</span>
+                <strong>Evaluación completa</strong>
+                <span>Usa laboratorio reciente: colesterol total, HDL y HbA1c.</span>
               </button>
-            ))}
+              <button
+                className={mode === "simple" ? "mode-option mode-option-active" : "mode-option"}
+                type="button"
+                disabled={loading}
+                onClick={() => handleModeChange("simple")}
+              >
+                <strong>No tengo laboratorio reciente</strong>
+                <span>Usa menos datos. La precisión puede disminuir.</span>
+              </button>
+            </div>
+            <p className="preset-safety-copy">{presetSafetyCopy}</p>
+            <div className="preset-grid" aria-label="Casos de prueba">
+              {testProfiles.map((profile) => (
+                <button
+                  className="preset-button"
+                  type="button"
+                  disabled={loading}
+                  key={profile.id}
+                  onClick={() => applyPreset(profile.values)}
+                >
+                  <strong>{profile.label}</strong>
+                  <span>{profile.description}</span>
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
 
         {activeStep === 1 ? renderNumericGroup(bodyGroup) : null}
-        {activeStep === 2 ? renderNumericGroup(labGroup) : null}
+        {activeStep === 2 && mode === "complete" ? renderNumericGroup(labGroup) : null}
+        {activeStep === 2 && mode === "simple" ? (
+          <section className="simple-mode-panel" aria-labelledby="simple-mode-title">
+            <p className="section-kicker">Modo simple</p>
+            <h2 id="simple-mode-title">Evaluación sin laboratorio reciente</h2>
+            <p>
+              Este modo no solicita colesterol total, HDL ni HbA1c. Usa edad, IMC, cintura, sexo
+              reportado, grupo étnico reportado y tabaquismo actual. El resultado puede ser menos
+              preciso porque trabaja con menos información.
+            </p>
+          </section>
+        ) : null}
 
         {activeStep === 3 ? (
           <fieldset className="form-group context-group">
             <legend>
               <strong>Contexto declarado</strong>
-              <span>Categorías compatibles con el dataset usado por el modelo.</span>
+              <span>Categorías necesarias para usar el modelo actual.</span>
             </legend>
             <div className="field-grid categorical-grid">
               <div className="field">
                 <ContextDropdown
                   id="field-sex"
-                  label="Sexo"
+                  label="Sexo reportado"
                   value={form.sex}
                   disabled={loading}
                   options={sexOptions}
@@ -457,6 +540,10 @@ export function PredictionForm({
                   onChange={(value) => onFormChange("sex", value)}
                   onOpenChange={(isOpen) => setOpenContextDropdown(isOpen ? "sex" : null)}
                 />
+                <small>
+                  Esta categoría replica la variable disponible en la encuesta original. No describe
+                  identidad de género de forma amplia.
+                </small>
               </div>
 
               <div className="field">
@@ -470,6 +557,11 @@ export function PredictionForm({
                   onChange={(value) => onFormChange("race_ethnicity", value)}
                   onOpenChange={(isOpen) => setOpenContextDropdown(isOpen ? "race" : null)}
                 />
+                <small>
+                  Esta categoría proviene de NHANES 2017-2018, una encuesta de Estados Unidos. Puede
+                  no representar perfectamente identidades locales; elegí la opción más cercana solo
+                  porque el modelo actual la requiere como variable técnica.
+                </small>
               </div>
 
               <div
@@ -503,6 +595,10 @@ export function PredictionForm({
                     </span>
                   </span>
                 </div>
+                <small>
+                  En NHANES, el tabaquismo actual se deriva de preguntas sobre consumo de cigarrillos
+                  y consumo actual.
+                </small>
               </div>
             </div>
           </fieldset>
@@ -517,19 +613,19 @@ export function PredictionForm({
 
       <div className="form-actions">
         <button className="form-reset" type="button" disabled={loading} onClick={resetPagedForm}>
-          Limpiar datos
+          {buttonLabels.clearData}
         </button>
 
         <div className="step-action-group">
           {activeStep > 0 ? (
             <button className="step-back" type="button" disabled={loading} onClick={goToPreviousStep}>
-              Anterior
+              {buttonLabels.previous}
             </button>
           ) : null}
 
           {activeStep < formSteps.length - 1 ? (
             <button className="step-next" type="button" disabled={loading} onClick={goToNextStep}>
-              Continuar
+              {buttonLabels.continue}
             </button>
           ) : (
             <button
@@ -538,7 +634,7 @@ export function PredictionForm({
               disabled={loading}
               onClick={(event) => event.currentTarget.form?.requestSubmit()}
             >
-              {loading ? "Calculando..." : "Evaluar señales"}
+              {loading ? buttonLabels.calculating : buttonLabels.evaluateSignals}
             </button>
           )}
         </div>
@@ -571,15 +667,14 @@ export function PredictionForm({
                 className="modal-close"
                 type="button"
                 ref={modalCloseButtonRef}
-                aria-label="Cerrar directorio"
+                aria-label={buttonLabels.closeDirectory}
                 onClick={() => setIsDirectoryOpen(false)}
               >
                 ×
               </button>
             </div>
             <p id="lab-directory-description">
-              Antes de concurrir, confirmá si realizan colesterol total, HDL y hemoglobina
-              glicosilada, y si necesitás pedido médico, turno u obra social.
+              {measurementHelp.lab}
             </p>
             <div className="directory-list">
               {labDirectoryCenters.map((center) => (
@@ -590,6 +685,20 @@ export function PredictionForm({
                     <p>{center.address}</p>
                   </div>
                   <p>{center.evidence}</p>
+                  <dl className="directory-details">
+                    <div>
+                      <dt>Servicios mencionados</dt>
+                      <dd>{center.servicesMentioned.join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Preguntas para confirmar</dt>
+                      <dd>{center.questionsToConfirm.join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Antes de ir</dt>
+                      <dd>{center.scheduleNote}</dd>
+                    </div>
+                  </dl>
                   <a href={center.sourceUrl} target="_blank" rel="noreferrer">
                     Fuente: {center.sourceLabel}
                   </a>

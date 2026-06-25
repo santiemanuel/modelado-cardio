@@ -1,17 +1,14 @@
 {
-  "model_name": "logistic_regression_no_indfmpir",
-  "model_version": "case1-logreg-no-indfmpir-v2",
-  "metadata_version": "case1-metadata-v2",
+  "model_name": "logistic_regression_simple_no_lab",
+  "model_version": "case1-logreg-simple-no-lab-v2",
+  "metadata_version": "case1-metadata-simple-v2",
   "trained_at": "2026-06-24",
   "target": "hypertension_130_80",
-  "description": "Modelo base sin INDFMPIR, con laboratorio disponible.",
+  "description": "Modelo simple para evaluación sin colesterol total, HDL ni HbA1c.",
   "features": [
     "RIDAGEYR",
     "BMXBMI",
     "BMXWAIST",
-    "LBXTC",
-    "LBDHDD",
-    "LBXGH",
     "sex",
     "race_ethnicity",
     "current_smoker"
@@ -19,10 +16,7 @@
   "numeric_features": [
     "RIDAGEYR",
     "BMXBMI",
-    "BMXWAIST",
-    "LBXTC",
-    "LBDHDD",
-    "LBXGH"
+    "BMXWAIST"
   ],
   "categorical_features": [
     "sex",
@@ -49,7 +43,7 @@
     "hbp_med_current"
   ],
   "threshold_default": 0.5,
-  "threshold_max_f1_validation": 0.42,
+  "threshold_max_f1_validation": 0.38,
   "threshold_screening_recall_80_validation": 0.48,
   "threshold_policy": {
     "default": "Umbral operativo por defecto para mantener continuidad.",
@@ -60,25 +54,25 @@
   "sklearn_version": "1.8.0",
   "csv_path_used": "nhanes_case1_hypertension.csv",
   "rows_raw": 4994,
-  "rows_complete_variant": 4478,
-  "rows_train": 2518,
-  "rows_validation": 840,
-  "rows_test": 1120,
-  "positive_rate_unweighted": 0.5739169271996427,
-  "positive_rate_weighted": 0.5052595224231364,
+  "rows_complete_variant": 4726,
+  "rows_train": 2658,
+  "rows_validation": 886,
+  "rows_test": 1182,
+  "positive_rate_unweighted": 0.5749047820567076,
+  "positive_rate_weighted": 0.5054325092322568,
   "primary_test_metrics_weighted": [
     {
-      "model": "logistic_regression_no_indfmpir",
+      "model": "logistic_regression_simple_no_lab",
       "threshold": 0.5,
-      "accuracy": 0.7208900190114959,
-      "balanced_accuracy": 0.7210267570018234,
-      "precision": 0.7067452088363746,
-      "recall": 0.7255838457394788,
-      "f1": 0.7160406401688205,
-      "roc_auc": 0.7795579030315661,
-      "average_precision": 0.7230211111385629,
-      "brier": 0.19056662478385658,
-      "log_loss": 0.5638106566531422
+      "accuracy": 0.7186537771486802,
+      "balanced_accuracy": 0.7180434199257053,
+      "precision": 0.7109357160710752,
+      "recall": 0.7531520147982923,
+      "f1": 0.7314352216216633,
+      "roc_auc": 0.7882360240087158,
+      "average_precision": 0.7579260099109438,
+      "brier": 0.18700901390554928,
+      "log_loss": 0.5565568768603831
     }
   ]
 }

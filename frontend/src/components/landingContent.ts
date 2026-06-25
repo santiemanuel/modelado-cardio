@@ -6,20 +6,18 @@ import bloodPressureImage from "../assets/landing/hero-blood-pressure.png";
 import preventionRoutineImage from "../assets/landing/prevention-routine.png";
 import vascularPressureImage from "../assets/landing/vascular-pressure-abstract.png";
 import vascularImage from "../assets/landing/vascular-signals.png";
+import { routes } from "../content/siteContent";
 
 export const assessmentRoute = "/evaluar";
 
-export const navLinks = [
-  { href: "#enfoque", label: "Enfoque" },
-  { href: "#servicios", label: "Servicios" },
-  { href: "#modelo", label: "Modelo" },
-  { href: "#cuidado", label: "Cuidado" },
-];
+export const navLinks = routes
+  .filter((route) => ["/", "/modelo", "/educacion", "/recursos", "/faq", "/privacidad"].includes(route.path))
+  .map((route) => ({ href: route.path, label: route.label }));
 
 export const heroMetrics = [
   { value: "6", label: "variables numéricas" },
   { value: "3", label: "factores categóricos" },
-  { value: "0", label: "diagnósticos automáticos" },
+  { value: "2", label: "modos de evaluación" },
 ];
 
 export const heroImages = [
@@ -45,28 +43,24 @@ export const heroImages = [
 
 export const serviceCards = [
   {
-    title: "Lectura preventiva",
-    description:
-      "Ordena factores cardiometabólicos antes de que la presión alta se vuelva un dato aislado.",
-    icon: "Medir",
+    title: "No diagnóstico",
+    description: "No reemplaza consulta médica ni medición de presión arterial.",
+    icon: "Alcance",
   },
   {
-    title: "Chequeo regular",
-    description:
-      "Refuerza la medición periódica como referencia principal para confirmar o descartar hipertensión.",
-    icon: "Registrar",
+    title: "Datos habituales",
+    description: "Usa edad, mediciones corporales, laboratorio y hábitos.",
+    icon: "Datos",
   },
   {
-    title: "Conversación clínica",
-    description:
-      "Prepara una consulta con datos claros, límites del modelo y señales que conviene revisar.",
-    icon: "Consultar",
+    title: "Modelo documentado",
+    description: "Basado en NHANES 2017-2018 y métricas trazables.",
+    icon: "Modelo",
   },
   {
-    title: "Resultado orientativo",
-    description:
-      "Devuelve una probabilidad útil para priorizar próximos pasos, sin reemplazar diagnóstico médico.",
-    icon: "Orientar",
+    title: "Enfoque preventivo",
+    description: "Ayuda a ordenar señales para conversar mejor con un profesional.",
+    icon: "Cuidado",
   },
 ];
 

@@ -14,7 +14,18 @@ from app.schemas import (
     ModelInfoResponse,
     PredictionRequest,
     PredictionResponse,
+    SimplePredictionRequest,
+    ThresholdsResponse,
 )
+
+
+DEFAULT_CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+
+def parse_cors_origins(value: str | None = None) -> list[str]:
+    raw_value = value if value is not None else os.getenv("CORS_ALLOW_ORIGINS", "")
+    origins = [origin.strip() for origin in raw_value.split(",") if origin.strip()]
+    return origins or DEFAULT_CORS_ORIGINS
 
 
 def create_app(rate_limit: str | None = None) -> FastAPI:
@@ -31,10 +42,7 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
     app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ],
+        allow_origins=parse_cors_origins(),
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -51,14 +59,38 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
     def model_info() -> ModelInfoResponse:
         return ModelInfoResponse(
             model_name=model_service.model_name,
+            model_version=model_service.model_version,
+            metadata_version=str(model_service.metadata.get("metadata_version", "unversioned")),
+            trained_at=str(model_service.metadata.get("trained_at", "unknown")),
             target=str(model_service.metadata["target"]),
             threshold_default=model_service.threshold,
+            threshold_policy=dict(model_service.metadata.get("threshold_policy", {})),
             features=model_service.features,
+            numeric_features=list(model_service.metadata.get("numeric_features", [])),
+            categorical_features=list(model_service.metadata.get("categorical_features", [])),
+            primary_test_metrics_weighted=list(
+                model_service.metadata.get("primary_test_metrics_weighted", [])
+            ),
+            available_modes=model_service.available_modes(),
+            model_summaries=model_service.model_summaries(),
+        )
+
+    @app.get("/thresholds", response_model=ThresholdsResponse)
+    def thresholds() -> ThresholdsResponse:
+        return ThresholdsResponse(
+            model_name=model_service.model_name,
+            model_version=model_service.model_version,
+            threshold_policy=dict(model_service.metadata.get("threshold_policy", {})),
+            thresholds=model_service.thresholds(),
         )
 
     @app.post("/predict", response_model=PredictionResponse)
     def predict(request: Request, payload: PredictionRequest) -> PredictionResponse:
         return model_service.predict(payload)
+
+    @app.post("/predict-simple", response_model=PredictionResponse)
+    def predict_simple(request: Request, payload: SimplePredictionRequest) -> PredictionResponse:
+        return model_service.predict_simple(payload)
 
     return app
 

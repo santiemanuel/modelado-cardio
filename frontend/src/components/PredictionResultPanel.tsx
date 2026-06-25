@@ -1,12 +1,16 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-import type { PredictionResponse } from "../api";
+import type { PredictionResponse, ShapExplanation } from "../api";
+import { stateCopy } from "../content/evaluationContent";
+import { disclaimers, getResultRange, resultFactorGroups } from "../content/siteContent";
 
 type PredictionResultPanelProps = {
   error: string | null;
   loading: boolean;
   probabilityPercent: string | null;
   result: PredictionResponse | null;
+  actions?: ReactNode;
+  variant?: "default" | "full";
 };
 
 type ProbabilityTone = "green" | "yellow" | "red";
@@ -16,55 +20,25 @@ type ProbabilityGuidance = {
   range: string;
   interpretation: string;
   recommendation: string;
+  nextSteps: readonly string[];
 };
 
 type ProbabilityMeterStyle = CSSProperties & {
   "--probability-position": string;
 };
 
+type ShapImpactStyle = CSSProperties & {
+  "--shap-impact": string;
+};
+
 function getProbabilityGuidance(probability: number): ProbabilityGuidance {
-  const percent = Math.round(probability * 100);
-
-  if (percent < 25) {
-    return {
-      tone: "green",
-      range: "0-24%",
-      interpretation:
-        "Las señales cargadas no sugieren prioridad alta, pero siguen siendo una lectura orientativa.",
-      recommendation:
-        "Mantené controles habituales y llevá este resultado a tu próxima consulta médica; el criterio profesional confirma o descarta la predicción.",
-    };
-  }
-
-  if (percent < 50) {
-    return {
-      tone: "yellow",
-      range: "25-49%",
-      interpretation:
-        "Hay señales que conviene revisar con más atención, especialmente si tenés mediciones previas elevadas.",
-      recommendation:
-        "Agendá una consulta médica de control y compartí los valores usados; la consulta es la autoridad para verificar esta estimación.",
-    };
-  }
-
-  if (percent < 75) {
-    return {
-      tone: "red",
-      range: "50-74%",
-      interpretation:
-        "El modelo detecta una combinación de señales que amerita priorizar una revisión clínica.",
-      recommendation:
-        "Priorizá una consulta médica para confirmar con mediciones de presión arterial y evaluación profesional antes de tomar decisiones.",
-    };
-  }
-
+  const range = getResultRange(probability);
   return {
-    tone: "red",
-    range: "75-100%",
-    interpretation:
-      "La probabilidad orientativa es muy alta y no debería manejarse solo con esta herramienta.",
-    recommendation:
-      "Buscá evaluación médica pronta; si hay síntomas o registros de presión muy altos, acudí a un servicio de salud. La autoridad final es la consulta médica.",
+    tone: range.tone,
+    range: `${range.min}-${range.max}%`,
+    interpretation: `${range.interpretation} ${range.disclaimer}`,
+    recommendation: range.nextStep,
+    nextSteps: range.nextSteps,
   };
 }
 
@@ -73,8 +47,11 @@ function formatPercent(value: number) {
 }
 
 function formatModelName(modelName: string) {
-  if (modelName === "logistic_regression") {
+  if (modelName === "logistic_regression" || modelName === "logistic_regression_no_indfmpir") {
     return "Regresión logística";
+  }
+  if (modelName === "logistic_regression_simple_no_lab") {
+    return "Regresión logística simple";
   }
 
   return modelName
@@ -84,11 +61,23 @@ function formatModelName(modelName: string) {
     .join(" ");
 }
 
+function getShapDirectionMeta(direction: ShapExplanation["direction"]) {
+  if (direction === "raises_risk") {
+    return { symbol: "+", label: "Sube la estimacion" };
+  }
+  if (direction === "lowers_risk") {
+    return { symbol: "-", label: "Baja la estimacion" };
+  }
+  return { symbol: "0", label: "Sin cambio relevante" };
+}
+
 export function PredictionResultPanel({
+  actions,
   error,
   loading,
   probabilityPercent,
   result,
+  variant = "default",
 }: PredictionResultPanelProps) {
   const guidance = result ? getProbabilityGuidance(result.probability) : null;
   const probabilityPosition = result
@@ -97,25 +86,31 @@ export function PredictionResultPanel({
   const displayedProbabilityPercent = result
     ? (probabilityPercent ?? formatPercent(result.probability))
     : null;
+  const factorGroup =
+    result?.mode === "simple" || result?.model_name === "logistic_regression_simple_no_lab"
+      ? resultFactorGroups.simple
+      : resultFactorGroups.complete;
+  const shapExplanations = result?.shap_explanations ?? [];
+  const maxShapImpact = Math.max(...shapExplanations.map((item) => Math.abs(item.shap_value)), 0);
   const meterStyle: ProbabilityMeterStyle = {
     "--probability-position": probabilityPosition,
   };
 
   return (
-    <aside className="result-panel" aria-live="polite">
+    <aside className={`result-panel ${variant === "full" ? "result-panel-full" : ""}`} aria-live="polite">
       {loading && (
         <div className="result-skeleton" aria-label="Calculando resultado">
           <span />
           <span />
           <span />
-          <p>Calculando con el modelo entrenado.</p>
+          <p>{stateCopy.resultLoading}</p>
         </div>
       )}
 
       {!loading && !result && !error && (
         <div className="empty-state">
           <span className="status-dot" />
-          <p>Completá el formulario para ver una probabilidad orientativa y el contexto del modelo.</p>
+          <p>{stateCopy.resultEmpty}</p>
         </div>
       )}
 
@@ -144,7 +139,10 @@ export function PredictionResultPanel({
             style={meterStyle}
           >
             <div className="probability-readout">
-              <span>Probabilidad estimada</span>
+              <div>
+                <span>Probabilidad estimada</span>
+                <p>Estimación del modelo, no diagnóstico individual.</p>
+              </div>
               <strong>{displayedProbabilityPercent}</strong>
             </div>
             <div className="traffic-track" aria-hidden="true">
@@ -163,11 +161,72 @@ export function PredictionResultPanel({
           <div className="clinical-guidance">
             <p>{guidance.interpretation}</p>
             <strong>{guidance.recommendation}</strong>
+            <p>{result.context}</p>
+            <p>{disclaimers.long}</p>
           </div>
+
+          <section className="next-steps-block" aria-labelledby="next-steps-title">
+            <h3 id="next-steps-title">Qué hacer ahora</h3>
+            <ul className="plain-list">
+              {guidance.nextSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="factor-explanation" aria-labelledby="factor-explanation-title">
+            <h3 id="factor-explanation-title">Qué influyó en este resultado</h3>
+            <p>
+              SHAP compara los datos cargados con un punto base del modelo. En cada tarjeta,
+              + sube la estimación, - la baja y 0 indica un cambio mínimo. No indica causalidad.
+            </p>
+            {shapExplanations.length > 0 ? (
+              <ol className="shap-list">
+                {shapExplanations.map((item) => {
+                  const directionMeta = getShapDirectionMeta(item.direction);
+                  const impactPercent =
+                    maxShapImpact > 0
+                      ? Math.max(4, Math.round((Math.abs(item.shap_value) / maxShapImpact) * 100))
+                      : 0;
+                  const shapStyle: ShapImpactStyle = {
+                    "--shap-impact": `${impactPercent}%`,
+                  };
+
+                  return (
+                    <li className={`shap-item shap-${item.direction}`} key={item.feature}>
+                      <div className="shap-item-heading">
+                        <div>
+                          <strong>{item.label}</strong>
+                          <span>{item.value}</span>
+                        </div>
+                        <span
+                          className="shap-direction-badge"
+                          aria-label={directionMeta.label}
+                          title={directionMeta.label}
+                        >
+                          {directionMeta.symbol}
+                        </span>
+                      </div>
+                      <div className="shap-bar" style={shapStyle} aria-hidden="true">
+                        <span />
+                      </div>
+                      <p>{item.description}</p>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <ul className="chip-list">
+                {factorGroup.map((factor) => (
+                  <li key={factor}>{factor}</li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           <dl className="result-details">
             <div>
-              <dt>Tramo</dt>
+              <dt>Tramo comunicacional</dt>
               <dd>{guidance.range}</dd>
             </div>
             <div>
@@ -183,6 +242,7 @@ export function PredictionResultPanel({
               <dd>{result.probability.toFixed(3)}</dd>
             </div>
           </dl>
+          <div className="result-actions">{actions}</div>
         </div>
       )}
     </aside>

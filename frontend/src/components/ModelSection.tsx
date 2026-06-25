@@ -7,9 +7,9 @@ export function ModelSection() {
         <p className="section-kicker">Modelo orientativo</p>
         <h2 id="model-title">Qué datos usa la inferencia</h2>
         <p>
-          El formulario trabaja con variables disponibles en controles de salud habituales. Si no
-          tenés alguno de estos datos, conviene obtenerlo mediante una medición o laboratorio antes
-          de interpretar el resultado.
+          La evaluación completa trabaja con variables disponibles en controles de salud habituales.
+          Si no tenés laboratorio reciente, el modo simple permite continuar con menos información y
+          una advertencia de menor precisión.
         </p>
       </div>
       <ul className="signal-list" aria-label="Datos usados por el modelo">

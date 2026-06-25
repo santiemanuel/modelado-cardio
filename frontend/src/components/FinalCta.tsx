@@ -10,6 +10,9 @@ export function FinalCta() {
           Vas a recibir una predicción orientativa y un texto de contexto para decidir si corresponde
           medir, repetir controles o consultar.
         </p>
+        <p className="inline-warning">
+          El resultado no reemplaza medición de presión arterial ni consulta médica.
+        </p>
       </div>
       <a className="primary-cta" href={assessmentRoute}>
         Ir al formulario

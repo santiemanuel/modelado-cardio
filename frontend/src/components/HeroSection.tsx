@@ -4,19 +4,13 @@ export function HeroSection() {
   return (
     <section className="hero-section" id="inicio" aria-labelledby="hero-title">
       <div className="hero-copy">
-        <p className="eyebrow">Cardiometabolismo preventivo</p>
         <h1 id="hero-title">
           Que la presión alta no pase <span>inadvertida</span>
         </h1>
         <p className="hero-lede">
-          Una lectura clara de edad, hábitos y marcadores metabólicos para llegar antes a la medición
-          correcta y conversar con un equipo de salud con mejores preguntas.
+          Una lectura clara de edad, hábitos y marcadores cardiometabólicos para priorizar la
+          medición de presión y conversar con un equipo de salud con mejores preguntas.
         </p>
-        <ul className="hero-proof-list" aria-label="Principios de la evaluación">
-          <li>Primero medir</li>
-          <li>Después ordenar señales</li>
-          <li>Siempre consultar</li>
-        </ul>
         <div className="hero-actions">
           <a className="primary-cta" href={assessmentRoute}>
             Evaluar señales
@@ -24,8 +18,8 @@ export function HeroSection() {
               →
             </span>
           </a>
-          <a className="secondary-link" href="#enfoque">
-            Ver enfoque
+          <a className="secondary-link" href="#como-funciona">
+            Cómo funciona
           </a>
         </div>
         <dl className="hero-metrics" aria-label="Alcance de la evaluación">

@@ -1,9 +1,46 @@
+import { EducationPage } from "./components/EducationPage";
+import { FaqPage } from "./components/FaqPage";
 import { LandingPage } from "./components/LandingPage";
+import { MethodologyPage } from "./components/MethodologyPage";
+import { ModelPage } from "./components/ModelPage";
+import { NotFoundPage } from "./components/NotFoundPage";
 import { PredictionTool } from "./components/PredictionTool";
+import { PrivacyPage } from "./components/PrivacyPage";
+import { ResourcesPage } from "./components/ResourcesPage";
 
 export default function App() {
   const normalizedPath = window.location.pathname.replace(/\/$/, "") || "/";
-  const isPredictionRoute = normalizedPath === "/evaluar";
+
+  function renderRoute() {
+    if (normalizedPath === "/") {
+      return <LandingPage />;
+    }
+    if (normalizedPath === "/evaluar") {
+      return <PredictionTool />;
+    }
+    if (normalizedPath === "/modelo") {
+      return <ModelPage />;
+    }
+    if (normalizedPath === "/privacidad") {
+      return <PrivacyPage />;
+    }
+    if (normalizedPath === "/educacion") {
+      return <EducationPage />;
+    }
+    if (normalizedPath === "/recursos") {
+      return <ResourcesPage />;
+    }
+    if (normalizedPath === "/faq") {
+      return <FaqPage />;
+    }
+    if (normalizedPath === "/metodologia" || normalizedPath === "/metodología") {
+      return <MethodologyPage />;
+    }
+    if (normalizedPath === "/404") {
+      return <NotFoundPage />;
+    }
+    return <NotFoundPage />;
+  }
 
   return (
     <>
@@ -11,7 +48,7 @@ export default function App() {
         Saltar al contenido
       </a>
       <main id="contenido" tabIndex={-1}>
-        {isPredictionRoute ? <PredictionTool /> : <LandingPage />}
+        {renderRoute()}
       </main>
     </>
   );

@@ -11,6 +11,10 @@ export function ProblemSection() {
           mediciones, antecedentes y marcadores metabólicos en una lectura fácil de conversar con un
           equipo de salud.
         </p>
+        <p className="inline-warning">
+          Esta herramienta ayuda a ordenar contexto; no reemplaza la medición real de presión
+          arterial.
+        </p>
       </div>
       <div className="priority-list">
         {priorityRows.map((row) => (
