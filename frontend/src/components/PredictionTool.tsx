@@ -1,9 +1,9 @@
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { requestPrediction, requestSimplePrediction } from "../api";
 import type { PredictionResponse } from "../api";
-import { buttonLabels } from "../content/evaluationContent";
+import { buttonLabels, presetSafetyCopy } from "../content/evaluationContent";
 import { downloadPdf } from "../utils/pdf";
 import { PageMeta } from "./PageMeta";
 import type { SavedEvaluation } from "./FollowUpPanels";
@@ -15,6 +15,7 @@ import {
   initialForm,
   calculateBmi,
   formatBmi,
+  testProfiles,
   toPredictionPayload,
   toSimplePredictionPayload,
   validateForm,
@@ -38,6 +39,74 @@ function createLocalId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+type EvaluationStartScreenProps = {
+  loading: boolean;
+  onStartMode: (mode: EvaluationMode) => void;
+  onUseExample: (values: FormState) => void;
+};
+
+function EvaluationStartScreen({ loading, onStartMode, onUseExample }: EvaluationStartScreenProps) {
+  return (
+    <section className="evaluation-start" aria-labelledby="evaluation-start-title">
+      <div className="evaluation-start-heading">
+        <p className="section-kicker">Inicio</p>
+        <h2 id="evaluation-start-title">Elegí el modo de evaluación</h2>
+        <p>
+          La evaluación completa usa laboratorio reciente. El modo simple permite continuar con
+          mediciones corporales y contexto declarado.
+        </p>
+      </div>
+
+      <div className="evaluation-mode-grid" aria-label="Modos de evaluación">
+        <button
+          className="evaluation-mode-card"
+          type="button"
+          disabled={loading}
+          onClick={() => onStartMode("complete")}
+        >
+          <span>Modo completo</span>
+          <strong>Con laboratorio reciente</strong>
+          <p>Incluye colesterol total, HDL y HbA1c para usar todas las señales del modelo.</p>
+          <em>Ir a mediciones</em>
+        </button>
+
+        <button
+          className="evaluation-mode-card"
+          type="button"
+          disabled={loading}
+          onClick={() => onStartMode("simple")}
+        >
+          <span>Modo simple</span>
+          <strong>Sin laboratorio reciente</strong>
+          <p>Usa edad, IMC, cintura, sexo reportado, grupo étnico reportado y tabaquismo actual.</p>
+          <em>Ir a mediciones</em>
+        </button>
+      </div>
+
+      <section className="example-cases" aria-labelledby="example-cases-title">
+        <div className="example-cases-heading">
+          <h3 id="example-cases-title">Casos de ejemplo</h3>
+          <p>{presetSafetyCopy}</p>
+        </div>
+        <div className="preset-grid evaluation-example-grid">
+          {testProfiles.map((profile) => (
+            <button
+              className="preset-button"
+              type="button"
+              disabled={loading}
+              key={profile.id}
+              onClick={() => onUseExample(profile.values)}
+            >
+              <strong>{profile.label}</strong>
+              <span>{profile.description}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 export function PredictionTool() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<PredictionResponse | null>(null);
@@ -46,7 +115,9 @@ export function PredictionTool() {
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>("complete");
+  const [flowStarted, setFlowStarted] = useState(false);
   const [history, setHistory] = useState<SavedEvaluation[]>([]);
+  const resultSummaryRef = useRef<HTMLDivElement | null>(null);
 
   const probabilityPercent = useMemo(() => {
     if (!result) {
@@ -67,6 +138,26 @@ export function PredictionTool() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!result || loading) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const resultSummary = resultSummaryRef.current;
+      if (resultSummary) {
+        const headerHeight =
+          document.querySelector<HTMLElement>(".site-header")?.offsetHeight ?? 64;
+        const targetTop = resultSummary.getBoundingClientRect().top + window.scrollY;
+        if (!window.navigator.userAgent.toLowerCase().includes("jsdom")) {
+          window.scrollTo({ top: Math.max(0, targetTop - headerHeight - 24) });
+        }
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, result]);
+
   function persistHistory(nextHistory: SavedEvaluation[]) {
     setHistory(nextHistory);
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
@@ -80,7 +171,24 @@ export function PredictionTool() {
 
   function resetForm() {
     applyFormState(initialForm);
+  }
+
+  function startEvaluation(mode: EvaluationMode) {
+    setEvaluationMode(mode);
+    applyFormState(initialForm);
+    setFlowStarted(true);
+  }
+
+  function startExampleEvaluation(values: FormState) {
     setEvaluationMode("complete");
+    applyFormState(values);
+    setFlowStarted(true);
+  }
+
+  function returnToStartScreen() {
+    setFlowStarted(false);
+    setError(null);
+    setResult(null);
   }
 
   function confirmConsent() {
@@ -93,6 +201,8 @@ export function PredictionTool() {
 
   function startNewTest() {
     resetForm();
+    setEvaluationMode("complete");
+    setFlowStarted(false);
     setResult(null);
     setError(null);
   }
@@ -255,27 +365,30 @@ export function PredictionTool() {
                 {error}
               </p>
             ) : null}
-            <div className="workspace workspace-single" aria-label="Formulario de predicción">
-              <PredictionForm
-                form={form}
+            {!flowStarted ? (
+              <EvaluationStartScreen
                 loading={loading}
-                mode={evaluationMode}
-                onApplyPreset={applyFormState}
-                onFormChange={updateFormField}
-                onModeChange={(mode) => {
-                  setEvaluationMode(mode);
-                  setError(null);
-                  setResult(null);
-                }}
-                onReset={resetForm}
-                onSubmit={handleSubmit}
+                onStartMode={startEvaluation}
+                onUseExample={startExampleEvaluation}
               />
-            </div>
+            ) : (
+              <div className="workspace workspace-single" aria-label="Formulario de predicción">
+                <PredictionForm
+                  form={form}
+                  loading={loading}
+                  mode={evaluationMode}
+                  onBackToStart={returnToStartScreen}
+                  onFormChange={updateFormField}
+                  onReset={resetForm}
+                  onSubmit={handleSubmit}
+                />
+              </div>
+            )}
           </>
         ) : null}
 
         {consentAccepted && result ? (
-          <div className="summary-workspace" aria-label="Resumen orientativo">
+          <div className="summary-workspace" aria-label="Resumen orientativo" ref={resultSummaryRef}>
             <PredictionResultPanel
               actions={
                 <>

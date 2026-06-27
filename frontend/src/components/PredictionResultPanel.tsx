@@ -31,6 +31,34 @@ type ShapImpactStyle = CSSProperties & {
   "--shap-impact": string;
 };
 
+type ShapDirectionTone = "up" | "down" | "neutral";
+
+function ShapDirectionIcon({ tone }: { tone: ShapDirectionTone }) {
+  if (tone === "up") {
+    return (
+      <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 19V5" />
+        <path d="m6 11 6-6 6 6" />
+      </svg>
+    );
+  }
+
+  if (tone === "down") {
+    return (
+      <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 5v14" />
+        <path d="m6 13 6 6 6-6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 12h12" />
+    </svg>
+  );
+}
+
 function getProbabilityGuidance(probability: number): ProbabilityGuidance {
   const range = getResultRange(probability);
   return {
@@ -63,12 +91,12 @@ function formatModelName(modelName: string) {
 
 function getShapDirectionMeta(direction: ShapExplanation["direction"]) {
   if (direction === "raises_risk") {
-    return { symbol: "+", label: "Sube la estimacion" };
+    return { tone: "up" as const, label: "Sube la estimación" };
   }
   if (direction === "lowers_risk") {
-    return { symbol: "-", label: "Baja la estimacion" };
+    return { tone: "down" as const, label: "Baja la estimación" };
   }
-  return { symbol: "0", label: "Sin cambio relevante" };
+  return { tone: "neutral" as const, label: "Sin cambio relevante" };
 }
 
 export function PredictionResultPanel({
@@ -122,51 +150,79 @@ export function PredictionResultPanel({
 
       {!loading && result && guidance && (
         <div className={`result result-${guidance.tone}`}>
-          <div className="result-heading">
-            <div>
-              <p className="result-kicker">Resumen orientativo</p>
-              <h2>{result.risk_label}</h2>
-            </div>
-          </div>
-
-          <div
-            className="probability-meter"
-            role="meter"
-            aria-label="Semáforo de probabilidad"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(result.probability * 100)}
-            style={meterStyle}
-          >
-            <div className="probability-readout">
-              <div>
-                <span>Probabilidad estimada</span>
-                <p>Estimación del modelo, no diagnóstico individual.</p>
+          <div className="result-overview">
+            <div className="result-summary">
+              <div className="result-heading">
+                <div>
+                  <p className="result-kicker">Resumen orientativo</p>
+                  <h2>{result.risk_label}</h2>
+                </div>
               </div>
-              <strong>{displayedProbabilityPercent}</strong>
-            </div>
-            <div className="traffic-track" aria-hidden="true">
-              <span className="traffic-segment traffic-green" />
-              <span className="traffic-segment traffic-yellow" />
-              <span className="traffic-segment traffic-red" />
-              <span className="traffic-marker" />
-            </div>
-            <div className="traffic-labels" aria-hidden="true">
-              <span>Verde</span>
-              <span>Advertencia</span>
-              <span>Alto riesgo</span>
-            </div>
-          </div>
 
-          <div className="clinical-guidance">
-            <p>{guidance.interpretation}</p>
-            <strong>{guidance.recommendation}</strong>
-            <p>{result.context}</p>
-            <p>{disclaimers.long}</p>
+              <div
+                className="probability-meter"
+                role="meter"
+                aria-label="Semáforo de probabilidad"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(result.probability * 100)}
+                style={meterStyle}
+              >
+                <div className="probability-readout">
+                  <div>
+                    <span>Probabilidad estimada</span>
+                    <p>Estimación del modelo, no diagnóstico individual.</p>
+                  </div>
+                  <strong>{displayedProbabilityPercent}</strong>
+                </div>
+                <div className="traffic-track" aria-hidden="true">
+                  <span className="traffic-segment traffic-green" />
+                  <span className="traffic-segment traffic-yellow" />
+                  <span className="traffic-segment traffic-red" />
+                  <span className="traffic-marker" />
+                </div>
+                <div className="traffic-labels" aria-hidden="true">
+                  <span>Verde</span>
+                  <span>Advertencia</span>
+                  <span>Alto riesgo</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="result-context-panel">
+              <div className="clinical-guidance">
+                <p>{guidance.interpretation}</p>
+                <strong>{guidance.recommendation}</strong>
+                <p>{result.context}</p>
+                <p>{disclaimers.long}</p>
+              </div>
+
+              <dl className="result-details">
+                <div>
+                  <dt>Tramo comunicacional</dt>
+                  <dd>{guidance.range}</dd>
+                </div>
+                <div>
+                  <dt>Umbral del modelo</dt>
+                  <dd>{formatPercent(result.threshold)}</dd>
+                </div>
+                <div>
+                  <dt>Modelo</dt>
+                  <dd>{formatModelName(result.model_name)}</dd>
+                </div>
+                <div>
+                  <dt>Valor técnico</dt>
+                  <dd>{result.probability.toFixed(3)}</dd>
+                </div>
+              </dl>
+            </div>
           </div>
 
           <section className="next-steps-block" aria-labelledby="next-steps-title">
-            <h3 id="next-steps-title">Qué hacer ahora</h3>
+            <div>
+              <p className="result-kicker">Próximo paso</p>
+              <h3 id="next-steps-title">Qué hacer ahora</h3>
+            </div>
             <ul className="plain-list">
               {guidance.nextSteps.map((step) => (
                 <li key={step}>{step}</li>
@@ -175,11 +231,14 @@ export function PredictionResultPanel({
           </section>
 
           <section className="factor-explanation" aria-labelledby="factor-explanation-title">
-            <h3 id="factor-explanation-title">Qué influyó en este resultado</h3>
-            <p>
-              SHAP compara los datos cargados con un punto base del modelo. En cada tarjeta,
-              + sube la estimación, - la baja y 0 indica un cambio mínimo. No indica causalidad.
-            </p>
+            <div className="factor-explanation-heading">
+              <h3 id="factor-explanation-title">Qué influyó en este resultado</h3>
+              <p>
+                SHAP compara los datos cargados con un punto base del modelo. La flecha indica si
+                cada variable empujó la estimación hacia arriba o abajo; la barra muestra su peso
+                relativo. No indica causalidad.
+              </p>
+            </div>
             {shapExplanations.length > 0 ? (
               <ol className="shap-list">
                 {shapExplanations.map((item) => {
@@ -204,7 +263,7 @@ export function PredictionResultPanel({
                           aria-label={directionMeta.label}
                           title={directionMeta.label}
                         >
-                          {directionMeta.symbol}
+                          <ShapDirectionIcon tone={directionMeta.tone} />
                         </span>
                       </div>
                       <div className="shap-bar" style={shapStyle} aria-hidden="true">
@@ -224,24 +283,6 @@ export function PredictionResultPanel({
             )}
           </section>
 
-          <dl className="result-details">
-            <div>
-              <dt>Tramo comunicacional</dt>
-              <dd>{guidance.range}</dd>
-            </div>
-            <div>
-              <dt>Umbral del modelo</dt>
-              <dd>{formatPercent(result.threshold)}</dd>
-            </div>
-            <div>
-              <dt>Modelo</dt>
-              <dd>{formatModelName(result.model_name)}</dd>
-            </div>
-            <div>
-              <dt>Valor técnico</dt>
-              <dd>{result.probability.toFixed(3)}</dd>
-            </div>
-          </dl>
           <div className="result-actions">{actions}</div>
         </div>
       )}

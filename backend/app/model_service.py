@@ -31,18 +31,18 @@ DEFAULT_CONTEXT = (
 FEATURE_LABELS = {
     "RIDAGEYR": "Edad",
     "BMXBMI": "IMC calculado",
-    "BMXWAIST": "Perimetro de cintura",
+    "BMXWAIST": "Perímetro de cintura",
     "LBXTC": "Colesterol total",
     "LBDHDD": "HDL",
     "LBXGH": "HbA1c",
     "sex": "Sexo reportado",
-    "race_ethnicity": "Grupo etnico reportado",
+    "race_ethnicity": "Grupo étnico reportado",
     "current_smoker": "Tabaquismo actual",
 }
 
 FEATURE_UNITS = {
-    "RIDAGEYR": "anos",
-    "BMXBMI": "kg/m2",
+    "RIDAGEYR": "años",
+    "BMXBMI": "kg/m²",
     "BMXWAIST": "cm",
     "LBXTC": "mg/dL",
     "LBDHDD": "mg/dL",
@@ -52,13 +52,27 @@ FEATURE_UNITS = {
 FEATURE_DESCRIPTIONS = {
     "RIDAGEYR": "Edad comparada con el punto base aprendido por el modelo.",
     "BMXBMI": "IMC calculado desde peso y altura.",
-    "BMXWAIST": "Cintura declarada frente al perfil base.",
-    "LBXTC": "Colesterol total informado para esta evaluacion.",
-    "LBDHDD": "HDL informado para esta evaluacion.",
-    "LBXGH": "HbA1c informada para esta evaluacion.",
-    "sex": "Categoria de sexo reportado usada por NHANES.",
-    "race_ethnicity": "Categoria etnica reportada usada por NHANES.",
+    "BMXWAIST": "Perímetro de cintura declarado frente al perfil base.",
+    "LBXTC": "Colesterol total informado para esta evaluación.",
+    "LBDHDD": "HDL informado para esta evaluación.",
+    "LBXGH": "HbA1c informada para esta evaluación.",
+    "sex": "Categoría de sexo reportado usada por NHANES.",
+    "race_ethnicity": "Categoría étnica reportada usada por NHANES.",
     "current_smoker": "Respuesta declarada sobre tabaquismo actual.",
+}
+
+SEX_VALUE_LABELS = {
+    "Female": "Femenino",
+    "Male": "Masculino",
+}
+
+RACE_VALUE_LABELS = {
+    "Mexican American": "Mexicano estadounidense",
+    "Non-Hispanic Asian": "Asiático no hispano",
+    "Non-Hispanic Black": "Negro no hispano",
+    "Non-Hispanic White": "Blanco no hispano",
+    "Other Hispanic": "Otro origen hispano",
+    "Other Race / Multi-Racial": "Otra raza o multirracial",
 }
 
 
@@ -335,7 +349,11 @@ class ModelService:
         if pd.isna(value):
             return "No informado"
         if feature == "current_smoker":
-            return "Si" if float(value) == 1.0 else "No"
+            return "Sí" if float(value) == 1.0 else "No"
+        if feature == "sex":
+            return SEX_VALUE_LABELS.get(str(value), str(value))
+        if feature == "race_ethnicity":
+            return RACE_VALUE_LABELS.get(str(value), str(value))
         if isinstance(value, (float, np.floating)):
             formatted = f"{float(value):.1f}".rstrip("0").rstrip(".")
         else:

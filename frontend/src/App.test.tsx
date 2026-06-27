@@ -70,16 +70,7 @@ async function acceptConsent(user = userEvent.setup()) {
 }
 
 async function fillValidForm() {
-  const user = userEvent.setup();
-
-  await acceptConsent(user);
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
-  await user.type(screen.getByLabelText("Edad"), "66");
-  await user.type(screen.getByLabelText("Peso"), "90.5");
-  await user.type(screen.getByLabelText("Altura"), "169");
-  await user.type(screen.getByLabelText("Perímetro de cintura"), "101.8");
-
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  const user = await reachLaboratoryStep();
   await user.type(screen.getByLabelText("Colesterol total"), "157");
   await user.type(screen.getByLabelText("HDL"), "60");
   await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "6.2");
@@ -88,6 +79,17 @@ async function fillValidForm() {
   await user.click(screen.getByRole("combobox", { name: "Grupo étnico reportado" }));
   await user.click(screen.getByRole("option", { name: "Negro no hispano" }));
 
+  return user;
+}
+
+async function reachLaboratoryStep(user = userEvent.setup()) {
+  await acceptConsent(user);
+  await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
+  await user.type(screen.getByLabelText("Edad"), "66");
+  await user.type(screen.getByLabelText("Peso"), "90.5");
+  await user.type(screen.getByLabelText("Altura"), "169");
+  await user.type(screen.getByLabelText("Perímetro de cintura"), "101.8");
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
   return user;
 }
 
@@ -236,7 +238,7 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Recursos" })).toHaveAttribute("href", "/recursos");
     expect(screen.getByText("Volver al inicio").closest("a")).toHaveAttribute("href", "/");
     expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
-    expect(screen.queryByText("Elegí un punto de partida")).not.toBeInTheDocument();
+    expect(screen.queryByText("Elegí el modo de evaluación")).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Entiendo y quiero continuar"));
     await user.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -244,10 +246,16 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Evaluar señales cardiometabólicas" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Elegí un punto de partida")).toBeInTheDocument();
+    expect(screen.getByText("Elegí el modo de evaluación")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Con laboratorio reciente/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sin laboratorio reciente/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Casos de ejemplo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Control habitual/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Más señales/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Tabaquismo actual/ })).toBeInTheDocument();
     expect(screen.getByText(/Los casos base sirven para probar la interfaz/)).toBeInTheDocument();
     expect(screen.getByText(/Para adultos de 20 años o más/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Edad")).not.toBeInTheDocument();
   });
 
   it("keeps visible Spanish copy with accents and without mojibake", () => {
@@ -275,11 +283,49 @@ describe("App", () => {
     renderAt("/evaluar");
 
     await acceptConsent(user);
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getAllByRole("alert")[0]).toHaveTextContent(
       "Ingresá un valor válido para la edad.",
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("flags body measurements that are individually valid but incompatible together", async () => {
+    let user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await acceptConsent(user);
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
+    await user.type(screen.getByLabelText("Edad"), "45");
+    await user.type(screen.getByLabelText("Peso"), "125");
+    await user.type(screen.getByLabelText("Altura"), "169");
+    await user.type(screen.getByLabelText("Perímetro de cintura"), "60");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Los datos cargados no parecen compatibles entre sí",
+    );
+    expect(screen.getByLabelText("Peso")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Altura")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Perímetro de cintura")).toHaveAttribute("aria-invalid", "true");
+    expect(fetch).not.toHaveBeenCalled();
+
+    cleanup();
+    user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await acceptConsent(user);
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
+    await user.type(screen.getByLabelText("Edad"), "45");
+    await user.type(screen.getByLabelText("Peso"), "62");
+    await user.type(screen.getByLabelText("Altura"), "169");
+    await user.type(screen.getByLabelText("Perímetro de cintura"), "150");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Los datos cargados no parecen compatibles entre sí",
     );
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -289,13 +335,21 @@ describe("App", () => {
     renderAt("/evaluar");
 
     await acceptConsent(user);
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
 
     expect(screen.getByText("-")).toBeInTheDocument();
+    expect(
+      screen.queryByText("El IMC se calcula con peso y altura; no hace falta ingresarlo a mano."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/Pendiente/i)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Peso"), "90.5");
-    await user.type(screen.getByLabelText("Altura"), "169");
+    await user.type(screen.getByLabelText("Altura"), "16");
+
+    expect(screen.getByText("-")).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\.\d kg\/m²/)).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Altura"), "9");
 
     expect(screen.getByText("-")).toBeInTheDocument();
     expect(screen.queryByText("31.7 kg/m²")).not.toBeInTheDocument();
@@ -307,12 +361,58 @@ describe("App", () => {
     });
   });
 
+  it("flags incompatible laboratory values before moving to context", async () => {
+    let user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await reachLaboratoryStep(user);
+    await user.type(screen.getByLabelText("Colesterol total"), "120");
+    await user.type(screen.getByLabelText("HDL"), "140");
+    await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "5.8");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "El HDL no debería superar el colesterol total",
+    );
+    expect(screen.getByLabelText("Colesterol total")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("HDL")).toHaveAttribute("aria-invalid", "true");
+    expect(fetch).not.toHaveBeenCalled();
+
+    cleanup();
+    user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await reachLaboratoryStep(user);
+    await user.type(screen.getByLabelText("Colesterol total"), "100");
+    await user.type(screen.getByLabelText("HDL"), "85");
+    await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "5.8");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "la diferencia entre ambos es inusualmente baja",
+    );
+
+    cleanup();
+    user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await reachLaboratoryStep(user);
+    await user.type(screen.getByLabelText("Colesterol total"), "400");
+    await user.type(screen.getByLabelText("HDL"), "23");
+    await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "5.8");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "La relación entre colesterol total y HDL es poco habitual",
+    );
+  });
+
   it("accepts decimal commas before sending numeric payloads", async () => {
     const user = userEvent.setup();
     renderAt("/evaluar");
 
     await acceptConsent(user);
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
     await user.type(screen.getByLabelText("Edad"), "66");
     await user.type(screen.getByLabelText("Peso"), "90,5");
     await user.type(screen.getByLabelText("Altura"), "169");
@@ -344,7 +444,9 @@ describe("App", () => {
     expect(screen.getByLabelText("Peso")).toHaveValue("90.5");
     expect(screen.getByLabelText("Altura")).toHaveValue("169");
     expect(screen.getByLabelText("Perímetro de cintura")).toHaveValue("101.8");
-    expect(screen.getByText("31.7 kg/m²")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("31.7 kg/m²")).toBeInTheDocument(), {
+      timeout: 1000,
+    });
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -418,8 +520,8 @@ describe("App", () => {
     expect(screen.getByText("Regresión logística")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Qué influyó en este resultado" })).toBeInTheDocument();
     expect(screen.getByText(/SHAP compara los datos cargados/)).toBeInTheDocument();
-    expect(screen.getAllByLabelText("Sube la estimacion").length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Baja la estimacion")).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Sube la estimación").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Baja la estimación")).toBeInTheDocument();
     expect(screen.getByText("66 años")).toBeInTheDocument();
     expect(screen.getByText("Edad comparada con el punto base del modelo.")).toBeInTheDocument();
     expect(screen.getByText("Colesterol total")).toBeInTheDocument();
@@ -440,7 +542,8 @@ describe("App", () => {
     expect(requestBody).not.toHaveProperty("BMXHT");
 
     await user.click(screen.getByRole("button", { name: "Realizar un nuevo test" }));
-    expect(screen.getByText("Elegí un punto de partida")).toBeInTheDocument();
+    expect(screen.getByText("Elegí el modo de evaluación")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Casos de ejemplo" })).toBeInTheDocument();
     expect(screen.queryByText("72%")).not.toBeInTheDocument();
   });
 
@@ -456,8 +559,7 @@ describe("App", () => {
     renderAt("/evaluar");
 
     await acceptConsent(user);
-    await user.click(screen.getByRole("button", { name: /No tengo laboratorio reciente/ }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: /Sin laboratorio reciente/ }));
     await user.type(screen.getByLabelText("Edad"), "66");
     await user.type(screen.getByLabelText("Peso"), "90,5");
     await user.type(screen.getByLabelText("Altura"), "169");

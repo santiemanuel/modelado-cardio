@@ -58,6 +58,19 @@ def test_predict_valid_payload() -> None:
         "current_smoker",
     }
     assert body["shap_explanations"][0]["impact"] >= body["shap_explanations"][-1]["impact"]
+    explanations_by_feature = {item["feature"]: item for item in body["shap_explanations"]}
+    assert explanations_by_feature["BMXWAIST"]["label"] == "Perímetro de cintura"
+    assert explanations_by_feature["BMXWAIST"]["description"] == (
+        "Perímetro de cintura declarado frente al perfil base."
+    )
+    assert explanations_by_feature["RIDAGEYR"]["value"].endswith("años")
+    assert explanations_by_feature["BMXBMI"]["value"].endswith("kg/m²")
+    assert explanations_by_feature["sex"]["value"] == "Femenino"
+    assert explanations_by_feature["race_ethnicity"]["label"] == "Grupo étnico reportado"
+    assert explanations_by_feature["race_ethnicity"]["value"] == "Negro no hispano"
+    assert explanations_by_feature["race_ethnicity"]["description"] == (
+        "Categoría étnica reportada usada por NHANES."
+    )
 
 
 def test_predict_rejects_missing_required_field() -> None:
