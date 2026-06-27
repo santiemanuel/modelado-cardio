@@ -1,12 +1,32 @@
 import { useMemo, useState } from "react";
 
-import { getSourcesById } from "../content/sourceContent";
 import { localResources } from "../content/siteContent";
 import type { LocalResourceKind } from "../content/siteContent";
 import { LandingHeader } from "./LandingHeader";
 import { PageMeta } from "./PageMeta";
+import { ResourceContactLinks } from "./ResourceContactLinks";
 
 const filters: LocalResourceKind[] = ["Todos", "Público", "Privado"];
+
+function getResourceAddresses(address: string) {
+  return address.split(/\s+\/\s+/).map((value) => value.trim());
+}
+
+function getGoogleMapsUrl(centerName: string, address: string) {
+  const query = `${centerName}, ${address}, Salta Capital, Salta, Argentina`;
+  return `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+}
+
+function MapIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17" />
+      <path d="M12 3.5c2.2 2.4 3.4 5.2 3.4 8.5S14.2 18.1 12 20.5" />
+      <path d="M12 3.5C9.8 5.9 8.6 8.7 8.6 12s1.2 6.1 3.4 8.5" />
+    </svg>
+  );
+}
 
 export function ResourcesPage() {
   const [filter, setFilter] = useState<LocalResourceKind>("Todos");
@@ -17,7 +37,6 @@ export function ResourcesPage() {
         : localResources.filter((resource) => resource.kind === filter),
     [filter],
   );
-  const resourceSources = getSourcesById(["S17", "S18", "S19", "S20", "S21", "S22", "S23"]);
 
   return (
     <div className="landing-page">
@@ -50,7 +69,22 @@ export function ResourcesPage() {
             <article className="resource-card" key={center.name}>
               <span>{center.kind}</span>
               <h2>{center.name}</h2>
-              <p>{center.address}</p>
+              <div className="resource-address-list" aria-label={`Direcciones de ${center.name}`}>
+                {getResourceAddresses(center.address).map((address) => (
+                  <a
+                    className="resource-map-link"
+                    href={getGoogleMapsUrl(center.name, address)}
+                    target="_blank"
+                    rel="noreferrer"
+                    key={address}
+                    aria-label={`Abrir ${center.name}, ${address}, en Google Maps`}
+                  >
+                    <MapIcon />
+                    <span>{address}</span>
+                  </a>
+                ))}
+              </div>
+              <ResourceContactLinks contact={center.contact} />
               <p>{center.evidence}</p>
               <dl className="resource-details">
                 <div>
@@ -67,23 +101,11 @@ export function ResourcesPage() {
                 </div>
               </dl>
               <a href={center.sourceUrl} target="_blank" rel="noreferrer">
-                Fuente: {center.sourceLabel}
+                Ver sitio de {center.sourceLabel}
               </a>
             </article>
           ))}
         </div>
-
-        <section className="content-block" aria-labelledby="resource-sources-title">
-          <h2 id="resource-sources-title">Fuentes del directorio</h2>
-          <div className="source-list">
-            {resourceSources.map((source) => (
-              <a href={source.url} key={source.id} target="_blank" rel="noreferrer">
-                <span>{source.id}</span>
-                {source.publisher}: {source.title}
-              </a>
-            ))}
-          </div>
-        </section>
       </section>
     </div>
   );

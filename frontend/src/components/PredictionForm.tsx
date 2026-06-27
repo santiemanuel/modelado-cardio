@@ -15,6 +15,7 @@ import {
   validateNumericFieldMap,
 } from "./predictionFormConfig";
 import type { EvaluationMode, FormState, NumericFieldKey } from "./predictionFormConfig";
+import { ResourceContactLinks } from "./ResourceContactLinks";
 
 type PredictionFormProps = {
   form: FormState;
@@ -683,6 +684,7 @@ export function PredictionForm({
                     <span>{center.kind}</span>
                     <h3>{center.name}</h3>
                     <p>{center.address}</p>
+                    <ResourceContactLinks contact={center.contact} />
                   </div>
                   <p>{center.evidence}</p>
                   <dl className="directory-details">
@@ -700,7 +702,7 @@ export function PredictionForm({
                     </div>
                   </dl>
                   <a href={center.sourceUrl} target="_blank" rel="noreferrer">
-                    Fuente: {center.sourceLabel}
+                    Ver sitio de {center.sourceLabel}
                   </a>
                 </article>
               ))}

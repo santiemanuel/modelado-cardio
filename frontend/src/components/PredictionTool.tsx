@@ -7,8 +7,8 @@ import { buttonLabels } from "../content/evaluationContent";
 import { downloadPdf } from "../utils/pdf";
 import { PageMeta } from "./PageMeta";
 import type { SavedEvaluation } from "./FollowUpPanels";
+import { LandingHeader } from "./LandingHeader";
 import { PredictionForm } from "./PredictionForm";
-import { PredictionHeader } from "./PredictionHeader";
 import { PredictionIntro } from "./PredictionIntro";
 import { PredictionResultPanel } from "./PredictionResultPanel";
 import {
@@ -201,7 +201,7 @@ export function PredictionTool() {
   return (
     <div className="prediction-page">
       <PageMeta page="evaluation" />
-      <PredictionHeader />
+      <LandingHeader />
 
       <section
         className="prediction-section"

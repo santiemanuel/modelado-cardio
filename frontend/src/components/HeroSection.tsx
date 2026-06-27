@@ -18,9 +18,6 @@ export function HeroSection() {
               →
             </span>
           </a>
-          <a className="secondary-link" href="#como-funciona">
-            Cómo funciona
-          </a>
         </div>
         <dl className="hero-metrics" aria-label="Alcance de la evaluación">
           {heroMetrics.map((metric) => (
@@ -40,7 +37,6 @@ export function HeroSection() {
           </figure>
         ))}
         <div className="hero-insight" role="note">
-          <span>Lectura responsable</span>
           <strong>Predicción orientativa</strong>
           <p>Se confirma con tensiómetro, seguimiento y criterio profesional.</p>
         </div>

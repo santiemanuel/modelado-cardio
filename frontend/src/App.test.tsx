@@ -121,16 +121,15 @@ describe("App", () => {
       screen.getByRole("heading", { name: "La presión alta no siempre se siente" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Tres pasos para ordenar tus señales" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Tres pasos para ordenar tus señales" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Lectura responsable")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Una lectura preventiva, no un diagnóstico" }),
+      screen.getByRole("heading", { name: "Flujo de lectura antes de evaluar" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Qué datos usa la inferencia" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Qué datos conviene tener a mano" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Laboratorio reciente")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reunir mediciones" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sumar laboratorio si existe" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Leer como prioridad" })).toBeInTheDocument();
     expect(screen.getAllByText(/Un resultado bajo no descarta presión alta/).length).toBeGreaterThan(
       0,
     );
@@ -144,14 +143,11 @@ describe("App", () => {
       "href",
       "/evaluar",
     );
-    expect(screen.getByRole("link", { name: "Ir al formulario" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Empezar evaluación" })).toHaveAttribute(
       "href",
       "/evaluar",
     );
-    expect(screen.getByRole("link", { name: "Cómo funciona" })).toHaveAttribute(
-      "href",
-      "#como-funciona",
-    );
+    expect(screen.queryByRole("link", { name: "Cómo funciona" })).not.toBeInTheDocument();
   });
 
   it("renders local resources with shared confirmation details", () => {
@@ -163,6 +159,29 @@ describe("App", () => {
     expect(screen.getAllByText("Servicios mencionados").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Preguntas para confirmar").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Colesterol total, HDL, HbA1c/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Fuente:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Fuentes del directorio" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Ver sitio de/ })).toHaveLength(8);
+    expect(screen.getByRole("link", { name: "Teléfono 0387 4311977" })).toHaveAttribute(
+      "href",
+      "tel:+543874311977",
+    );
+    expect(screen.getByRole("link", { name: "WhatsApp 387 5612004" })).toHaveAttribute(
+      "href",
+      "https://wa.me/5493875612004",
+    );
+    expect(screen.getByRole("link", { name: "WhatsApp 387 5863132" })).toHaveAttribute(
+      "href",
+      "https://wa.me/5493875863132",
+    );
+    const mapsLinks = screen.getAllByRole("link", { name: /Google Maps/ });
+    expect(mapsLinks).toHaveLength(9);
+    expect(mapsLinks.every((link) => link.getAttribute("href")?.startsWith("https://maps.google.com/?q="))).toBe(
+      true,
+    );
+    expect(mapsLinks.some((link) => link.getAttribute("href")?.includes("Mariano%20Boedo%2051"))).toBe(
+      true,
+    );
   });
 
   it("renders FAQ and 404 routes", () => {
@@ -214,7 +233,7 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Confirmá el alcance de la evaluación" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Volver al sitio" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Recursos" })).toHaveAttribute("href", "/recursos");
     expect(screen.getByText("Volver al inicio").closest("a")).toHaveAttribute("href", "/");
     expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
     expect(screen.queryByText("Elegí un punto de partida")).not.toBeInTheDocument();
@@ -236,7 +255,7 @@ describe("App", () => {
 
     expect(document.body).toHaveTextContent("hipertensión");
     expect(document.body).toHaveTextContent("señales");
-    expect(document.body).toHaveTextContent("predicción");
+    expect(document.body).toHaveTextContent(/predicción/i);
     expect(document.body.textContent).not.toMatch(/Ãƒ|Ã‚/);
   });
 
@@ -360,7 +379,12 @@ describe("App", () => {
     expect(screen.getByText("CIACLAB")).toBeInTheDocument();
     expect(screen.getAllByText("Preguntas para confirmar").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Pedido médico/).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /Fuente:/ })).toHaveLength(8);
+    expect(screen.queryByText(/Fuente:/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Ver sitio de/ })).toHaveLength(8);
+    expect(screen.getByRole("link", { name: "WhatsApp 387 5 125 955" })).toHaveAttribute(
+      "href",
+      "https://wa.me/5493875125955",
+    );
 
     await user.click(screen.getByRole("button", { name: "Cerrar directorio" }));
 

@@ -11,7 +11,11 @@ import { routes } from "../content/siteContent";
 export const assessmentRoute = "/evaluar";
 
 export const navLinks = routes
-  .filter((route) => ["/", "/modelo", "/educacion", "/recursos", "/faq", "/privacidad"].includes(route.path))
+  .filter((route) =>
+    ["/", "/modelo", "/educacion", "/recursos", "/faq", "/privacidad"].includes(
+      route.path,
+    ),
+  )
   .map((route) => ({ href: route.path, label: route.label }));
 
 export const heroMetrics = [
@@ -66,19 +70,16 @@ export const serviceCards = [
 
 export const priorityRows = [
   {
-    label: "Medición real de presión arterial",
-    note: "Referencia principal",
-    fill: "100%",
+    label: "Medí la presión",
+    note: "Es el dato que permite confirmar si los valores están elevados.",
   },
   {
-    label: "Contexto cardiometabólico",
-    note: "Señales indirectas",
-    fill: "78%",
+    label: "Anotá el contexto",
+    note: "Horario, reposo, mediciones previas y antecedentes ayudan a interpretar mejor.",
   },
   {
-    label: "Consulta profesional",
-    note: "Decisión clínica",
-    fill: "88%",
+    label: "Llevá los datos a consulta",
+    note: "La decisión clínica se toma con mediciones reales y tu situación completa.",
   },
 ];
 
@@ -138,15 +139,3 @@ export const careMosaicItems = [
     caption: "Hábitos medibles",
   },
 ] as const;
-
-export const modelSignals = [
-  "Edad",
-  "IMC",
-  "Cintura",
-  "Colesterol total",
-  "HDL",
-  "Hemoglobina glicosilada",
-  "Sexo",
-  "Etnicidad",
-  "Tabaquismo actual",
-];

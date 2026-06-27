@@ -144,47 +144,6 @@ export const neededDataGroups = [
   },
 ] as const;
 
-export const howItWorksSteps = [
-  {
-    title: "Cargás datos disponibles",
-    body:
-      "Edad, mediciones corporales, laboratorio si lo tenés, sexo reportado, grupo étnico reportado y tabaquismo actual.",
-  },
-  {
-    title: "La herramienta ordena señales",
-    body:
-      "El modelo compara señales indirectas con el dataset de entrenamiento sin usar mediciones de presión como entrada.",
-  },
-  {
-    title: "Revisás próximos pasos",
-    body:
-      "El resultado sugiere prioridad de revisión, medición de presión y consulta cuando corresponde.",
-  },
-] as const;
-
-export const preventiveUseCards = [
-  {
-    title: "Ordena señales indirectas",
-    body:
-      "Reúne edad, mediciones, laboratorio y contexto declarado en una lectura fácil de revisar.",
-  },
-  {
-    title: "Prioriza próximos pasos",
-    body:
-      "Ayuda a decidir si conviene medir presión, repetir controles o preparar una consulta.",
-  },
-  {
-    title: "Evita diagnóstico automático",
-    body:
-      "No confirma ni descarta hipertensión, y no sugiere medicación ni tratamientos.",
-  },
-  {
-    title: "Reduce fuga de información",
-    body:
-      "No usa presión arterial medida, diagnóstico previo ni medicación como datos de entrada.",
-  },
-] as const;
-
 export const resultFactorGroups = {
   complete: [
     "edad",
@@ -273,6 +232,13 @@ export const localResources = [
     servicesMentioned: ["Laboratorio", "Determinaciones de rutina"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Pedido médico", "Turno"],
     scheduleNote: "Confirmar horarios y requisitos antes de concurrir.",
+    contact: {
+      phones: [
+        { label: "0800-555-7755", href: "tel:08005557755" },
+        { label: "0387 4325000", href: "tel:+543874325000" },
+      ],
+      whatsapps: [{ label: "387 5863132", href: "https://wa.me/5493875863132" }],
+    },
     sourceLabel: "Gobierno de Salta",
     sourceUrl:
       "https://www.salta.gob.ar/prensa/noticias/en-el-ultimo-anio-el-laboratorio-del-materno-infantil-realizo-casi-un-millon-de-analisis-94645",
@@ -285,6 +251,16 @@ export const localResources = [
     servicesMentioned: ["Bioquímica", "Microbiología", "Hematología"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Pedido médico", "Turno"],
     scheduleNote: "Confirmar sede, horarios y requisitos administrativos.",
+    contact: {
+      phones: [
+        { label: "148", href: "tel:148" },
+        { label: "0387 4320300", href: "tel:+543874320300" },
+      ],
+      whatsapps: [
+        { label: "387 3022001", href: "https://wa.me/5493873022001" },
+        { label: "387 3013672", href: "https://wa.me/5493873013672" },
+      ],
+    },
     sourceLabel: "Boletín Oficial de Salta",
     sourceUrl:
       "https://boletinoficialsalta.gob.ar/instrumento.php?cXdlcnR5dGFibGE9UnwyMTFELzA2JmRhdGE9MTc0MTRxd2VydHk=",
@@ -297,6 +273,13 @@ export const localResources = [
     servicesMentioned: ["Laboratorio central", "Áreas especializadas"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Pedido médico", "Turno"],
     scheduleNote: "Confirmar prestaciones disponibles para pacientes externos.",
+    contact: {
+      phones: [
+        { label: "148", href: "tel:148" },
+        { label: "0800-777-6452", href: "tel:08007776452" },
+      ],
+      whatsapps: [{ label: "387 4583032", href: "https://wa.me/5493874583032" }],
+    },
     sourceLabel: "Gobierno de Salta",
     sourceUrl:
       "https://www.salta.gob.ar/prensa/noticias/el-hospital-del-senior-del-milagro-cumple-130-anios-junto-a-los-saltenios-101089",
@@ -309,6 +292,13 @@ export const localResources = [
     servicesMentioned: ["Laboratorio bioquímico", "Toma de muestras"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Pedido médico", "Turno"],
     scheduleNote: "Confirmar atención para pacientes externos.",
+    contact: {
+      phones: [
+        { label: "148", href: "tel:148" },
+        { label: "0387 4315042", href: "tel:+543874315042" },
+      ],
+      whatsapps: [{ label: "387 4145225", href: "https://wa.me/5493874145225" }],
+    },
     sourceLabel: "Hospital Oñativia",
     sourceUrl: "https://www.hospitalonativia.gob.ar/?page_id=200",
   },
@@ -320,6 +310,9 @@ export const localResources = [
     servicesMentioned: ["Laboratorio"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Pedido médico", "Turno"],
     scheduleNote: "Confirmar prestaciones y requisitos antes de concurrir.",
+    contact: {
+      phones: [{ label: "0387 4385616", href: "tel:+543874385616" }],
+    },
     sourceLabel: "Argentina.gob.ar",
     sourceUrl: "https://www.argentina.gob.ar/salud/celiaquia/servicios/salta",
   },
@@ -331,6 +324,10 @@ export const localResources = [
     servicesMentioned: ["Análisis clínicos", "Química clínica"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Ayuno", "Obra social"],
     scheduleNote: "Confirmar horarios, ayuno y cobertura.",
+    contact: {
+      phones: [{ label: "387 5 125 955", href: "tel:+543875125955" }],
+      whatsapps: [{ label: "387 5 125 955", href: "https://wa.me/5493875125955" }],
+    },
     sourceLabel: "CIAC Salta",
     sourceUrl: "https://ciacsalta.com.ar/laboratorio/",
   },
@@ -342,6 +339,10 @@ export const localResources = [
     servicesMentioned: ["Alta complejidad", "Análisis clínicos", "Química clínica"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Ayuno", "Obra social"],
     scheduleNote: "Confirmar horarios, ayuno y cobertura.",
+    contact: {
+      phones: [{ label: "0387 4311977", href: "tel:+543874311977" }],
+      whatsapps: [{ label: "387 5612004", href: "https://wa.me/5493875612004" }],
+    },
     sourceLabel: "MAS Salta",
     sourceUrl: "https://massalta.com.ar/laboratorio/",
   },
@@ -353,6 +354,14 @@ export const localResources = [
     servicesMentioned: ["Laboratorio clínico", "Alta complejidad"],
     questionsToConfirm: ["Colesterol total", "HDL", "HbA1c", "Ayuno", "Obra social"],
     scheduleNote: "Confirmar horarios, ayuno y cobertura.",
+    contact: {
+      phones: [
+        { label: "0387 4219212", href: "tel:+543874219212" },
+        { label: "0387 4219222", href: "tel:+543874219222" },
+        { label: "Laboratorio 387 5572887", href: "tel:+543875572887" },
+      ],
+      whatsapps: [{ label: "387 2219202", href: "https://wa.me/5493872219202" }],
+    },
     sourceLabel: "Clínica del Centro",
     sourceUrl: "https://clinicadelcentrosalta.com.ar/",
   },

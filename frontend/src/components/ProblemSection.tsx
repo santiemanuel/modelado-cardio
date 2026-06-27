@@ -7,24 +7,22 @@ export function ProblemSection() {
         <p className="section-kicker">Sobre hipertensión</p>
         <h2 id="focus-title">La presión alta no siempre se siente</h2>
         <p>
-          Muchas personas descubren valores elevados durante un control. Por eso conviene unir
-          mediciones, antecedentes y marcadores metabólicos en una lectura fácil de conversar con un
-          equipo de salud.
+          Muchas personas recién detectan valores elevados durante un control. La forma de saberlo
+          es medir la presión arterial; esta herramienta solo ayuda a ordenar señales para preparar
+          una conversación con el equipo de salud.
         </p>
         <p className="inline-warning">
-          Esta herramienta ayuda a ordenar contexto; no reemplaza la medición real de presión
-          arterial.
+          Si ya tenés mediciones altas, síntomas o dudas, priorizá una consulta. El resultado no
+          confirma ni descarta hipertensión.
         </p>
       </div>
-      <div className="priority-list">
-        {priorityRows.map((row) => (
-          <article className="priority-item" key={row.label}>
+      <div className="care-priority-list" aria-label="Orden sugerido para interpretar la sección">
+        {priorityRows.map((row, index) => (
+          <article className="care-priority-item" key={row.label}>
+            <span className="care-priority-number">{index + 1}</span>
             <div>
               <strong>{row.label}</strong>
-              <span>{row.note}</span>
-            </div>
-            <div className="progress-track" aria-hidden="true">
-              <span style={{ width: row.fill }} />
+              <p>{row.note}</p>
             </div>
           </article>
         ))}
