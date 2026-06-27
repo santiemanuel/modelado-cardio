@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
 import { prohibitedInternalCopy } from "./content/editorialGuidelines";
+import { downloadSummaryPdf } from "./utils/pdf";
+
+vi.mock("./utils/pdf", () => ({
+  downloadSummaryPdf: vi.fn(),
+}));
 
 const validResponse = {
   probability: 0.72,
@@ -95,6 +100,7 @@ async function reachLaboratoryStep(user = userEvent.setup()) {
 
 describe("App", () => {
   beforeEach(() => {
+    vi.mocked(downloadSummaryPdf).mockClear();
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -545,6 +551,53 @@ describe("App", () => {
     expect(screen.getByText("Elegí el modo de evaluación")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Casos de ejemplo" })).toBeInTheDocument();
     expect(screen.queryByText("72%")).not.toBeInTheDocument();
+  });
+
+  it("downloads a structured consultation PDF summary", async () => {
+    renderAt("/evaluar");
+    const user = await fillValidForm();
+
+    await user.click(screen.getByRole("button", { name: /Evaluar se.al/ }));
+    await waitFor(() => expect(screen.getByText("72%")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Descargar resumen" }));
+
+    expect(downloadSummaryPdf).toHaveBeenCalledTimes(1);
+    expect(downloadSummaryPdf).toHaveBeenCalledWith(
+      "resumen-orientativo-cardio.pdf",
+      expect.objectContaining({
+        evaluationType: "Completa",
+        probabilityPercent: "72%",
+        probabilityValue: "0.720",
+        thresholdPercent: "50%",
+        communicationRange: "Prioridad alta (50-74%)",
+        warning: expect.stringContaining("no diagnostica hipertensi\u00f3n"),
+      }),
+      expect.objectContaining({
+        logoUrl: expect.stringContaining("logo"),
+      }),
+    );
+
+    const summaryData = vi.mocked(downloadSummaryPdf).mock.calls[0][1];
+    expect(summaryData.inputRows).toEqual(
+      expect.arrayContaining([
+        { label: "Edad", value: "66 a\u00f1os" },
+        { label: "Peso", value: "90.5 kg" },
+        { label: "Altura", value: "169 cm" },
+        { label: "Cintura", value: "101.8 cm" },
+        { label: "IMC calculado", value: "31.7 kg/m\u00b2" },
+        { label: "Colesterol total", value: "157 mg/dL" },
+        { label: "HDL", value: "60 mg/dL" },
+        { label: "HbA1c", value: "6.2%" },
+        { label: "Grupo \u00e9tnico (NHANES)", value: "Negro no hispano" },
+      ]),
+    );
+    expect(summaryData.factors).toHaveLength(3);
+    expect(summaryData.questions).toEqual(
+      expect.arrayContaining([
+        "\u00bfConviene medir presi\u00f3n en casa durante varios d\u00edas?",
+        "\u00bfEstos valores requieren seguimiento?",
+      ]),
+    );
   });
 
   it("submits simple mode without laboratory fields", async () => {

@@ -3,8 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { requestPrediction, requestSimplePrediction } from "../api";
 import type { PredictionResponse } from "../api";
+import logoImage from "../assets/landing/logo.png";
 import { buttonLabels, presetSafetyCopy } from "../content/evaluationContent";
-import { downloadPdf } from "../utils/pdf";
+import { getResultRange } from "../content/siteContent";
+import { downloadSummaryPdf } from "../utils/pdf";
+import type { SummaryPdfData } from "../utils/pdf";
 import { PageMeta } from "./PageMeta";
 import type { SavedEvaluation } from "./FollowUpPanels";
 import { LandingHeader } from "./LandingHeader";
@@ -33,6 +36,31 @@ function formatModelName(modelName: string) {
   }
 
   return modelName;
+}
+
+function formatSex(value: FormState["sex"]) {
+  return value === "Female" ? "Femenino reportado" : "Masculino reportado";
+}
+
+function formatRace(value: FormState["race_ethnicity"]) {
+  const labels: Record<FormState["race_ethnicity"], string> = {
+    "Mexican American": "Mexicano estadounidense",
+    "Non-Hispanic Asian": "Asi\u00e1tico no hispano",
+    "Non-Hispanic Black": "Negro no hispano",
+    "Non-Hispanic White": "Blanco no hispano",
+    "Other Hispanic": "Otro origen hispano",
+    "Other Race / Multi-Racial": "Otra raza o multirracial",
+  };
+
+  return labels[value];
+}
+
+function formatPdfFactorLabel(feature: string, label: string) {
+  if (feature === "race_ethnicity" || label.toLowerCase().includes("grupo")) {
+    return "Grupo \u00e9tnico (NHANES)";
+  }
+
+  return label;
 }
 
 function createLocalId() {
@@ -243,6 +271,56 @@ export function PredictionTool() {
     return formatBmi(calculateBmi(form));
   }
 
+  function buildSummaryPdfData(currentResult: PredictionResponse): SummaryPdfData {
+    const resultRange = getResultRange(currentResult.probability);
+    const isSimpleEvaluation =
+      evaluationMode === "simple" ||
+      currentResult.mode === "simple" ||
+      currentResult.model_name === "logistic_regression_simple_no_lab";
+    const laboratoryRows = isSimpleEvaluation
+      ? [{ label: "Laboratorio", value: "No incluido en modo simple" }]
+      : [
+          { label: "Colesterol total", value: `${form.LBXTC} mg/dL` },
+          { label: "HDL", value: `${form.LBDHDD} mg/dL` },
+          { label: "HbA1c", value: `${form.LBXGH}%` },
+        ];
+
+    return {
+      issuedAt: new Date().toLocaleString("es-AR"),
+      evaluationType: isSimpleEvaluation ? "Simple sin laboratorio" : "Completa",
+      probabilityPercent: `${Math.round(currentResult.probability * 100)}%`,
+      probabilityValue: currentResult.probability.toFixed(3),
+      thresholdPercent: `${Math.round(currentResult.threshold * 100)}%`,
+      modelName: formatModelName(currentResult.model_name),
+      communicationRange: `${resultRange.label} (${resultRange.min}-${resultRange.max}%)`,
+      riskLabel: currentResult.risk_label,
+      bmi: `${getBmiText()} kg/m\u00b2`,
+      inputRows: [
+        { label: "Edad", value: `${form.RIDAGEYR} a\u00f1os` },
+        { label: "Peso", value: `${form.BMXWT} kg` },
+        { label: "Altura", value: `${form.BMXHT} cm` },
+        { label: "Cintura", value: `${form.BMXWAIST} cm` },
+        { label: "IMC calculado", value: `${getBmiText()} kg/m\u00b2` },
+        ...laboratoryRows,
+        { label: "Sexo reportado", value: formatSex(form.sex) },
+        { label: "Grupo \u00e9tnico (NHANES)", value: formatRace(form.race_ethnicity) },
+        { label: "Fumador actual", value: form.current_smoker === "1.0" ? "S\u00ed" : "No" },
+      ],
+      factors: (currentResult.shap_explanations ?? []).slice(0, 3).map((item) => ({
+        label: formatPdfFactorLabel(item.feature, item.label),
+        value: item.value,
+        direction: item.direction,
+      })),
+      questions: [
+        "\u00bfConviene medir presi\u00f3n en casa durante varios d\u00edas?",
+        "\u00bfEstos valores requieren seguimiento?",
+        "\u00bfCon qu\u00e9 frecuencia repetir controles?",
+      ],
+      warning:
+        "Advertencia: este resumen no diagnostica hipertensi\u00f3n ni reemplaza una consulta m\u00e9dica. La presi\u00f3n arterial debe confirmarse con mediciones reales y evaluaci\u00f3n profesional.",
+    };
+  }
+
   function saveCurrentEvaluation() {
     if (!result) {
       return;
@@ -281,31 +359,9 @@ export function PredictionTool() {
     if (!result) {
       return;
     }
-    const lines = [
-      `Fecha y hora: ${new Date().toLocaleString("es-AR")}`,
-      `Probabilidad estimada: ${Math.round(result.probability * 100)}% (${result.probability.toFixed(3)})`,
-      `Umbral usado: ${Math.round(result.threshold * 100)}%`,
-      `Modelo: ${formatModelName(result.model_name)}`,
-      `Tipo de evaluación: ${evaluationMode === "simple" ? "Simple sin laboratorio" : "Completa"}`,
-      `IMC calculado: ${getBmiText()} kg/m²`,
-      `Edad: ${form.RIDAGEYR} años`,
-      `Peso: ${form.BMXWT} kg`,
-      `Altura: ${form.BMXHT} cm`,
-      `Perímetro de cintura: ${form.BMXWAIST} cm`,
-      ...(evaluationMode === "complete"
-        ? [
-            `Colesterol total: ${form.LBXTC} mg/dL`,
-            `HDL: ${form.LBDHDD} mg/dL`,
-            `HbA1c: ${form.LBXGH}%`,
-          ]
-        : [
-            "Laboratorio: no incluido. La precisión puede disminuir porque el resultado usa menos datos.",
-          ]),
-      "Advertencia: este resumen no diagnostica hipertensión ni reemplaza una consulta médica.",
-      "Preguntas para consulta: ¿conviene medir presión en casa?, ¿estos valores requieren seguimiento?, ¿con qué frecuencia repetir controles?",
-      "Espacio para presión arterial: fecha, hora, sistólica, diastólica, pulso, brazo y observaciones.",
-    ];
-    downloadPdf("resumen-orientativo-cardio.pdf", "Resumen orientativo para consulta", lines);
+    void downloadSummaryPdf("resumen-orientativo-cardio.pdf", buildSummaryPdfData(result), {
+      logoUrl: logoImage,
+    });
   }
 
   return (
