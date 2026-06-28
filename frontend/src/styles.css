@@ -3547,8 +3547,8 @@ h3 {
 }
 
 .history-probability-point {
-  cursor: pointer;
   fill: #008a48;
+  pointer-events: none;
   stroke: var(--canvas);
   stroke-width: 3;
   transform-box: fill-box;
@@ -3557,6 +3557,13 @@ h3 {
     transform 150ms cubic-bezier(0.25, 1, 0.5, 1),
     filter 160ms cubic-bezier(0.25, 1, 0.5, 1),
     r 160ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.history-probability-hit-target {
+  cursor: pointer;
+  fill: transparent;
+  outline: none;
+  pointer-events: all;
 }
 
 .history-probability-point-attention {
@@ -3575,13 +3582,12 @@ h3 {
   fill: #008a48;
 }
 
-.history-probability-point:focus-visible {
-  outline: none;
+.history-probability-hit-target:focus-visible + .history-probability-point {
   filter: drop-shadow(0 0 0 var(--focus-inner)) drop-shadow(0 0 6px var(--focus-outer));
 }
 
-.history-probability-point:hover,
-.history-probability-point:focus-visible {
+.history-probability-hit-target:hover + .history-probability-point,
+.history-probability-hit-target:focus-visible + .history-probability-point {
   transform: scale(1.18);
 }
 
@@ -4547,5 +4553,349 @@ button.secondary-link {
   .history-detail-heading p span {
     display: block;
     margin: 4px 0 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .history-section {
+    gap: var(--space-lg);
+    padding: 40px 0 max(40px, calc(32px + env(safe-area-inset-bottom)));
+  }
+
+  .history-section > *,
+  .history-hero-row,
+  .history-card-heading,
+  .history-detail-nav,
+  .history-page-actions,
+  .history-empty-actions,
+  .history-modal-actions {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .history-hero-row,
+  .history-card-heading,
+  .history-detail-nav {
+    width: 100%;
+  }
+
+  .history-hero-row h1,
+  .history-detail-heading h1 {
+    max-width: 100%;
+    margin-bottom: var(--space-sm);
+    font-size: clamp(2.25rem, 16vw, 2.75rem);
+    line-height: 0.95;
+  }
+
+  .history-subtitle,
+  .history-detail-heading p,
+  .history-pressure-summary {
+    font-size: 0.97rem;
+  }
+
+  .history-hero-row > div,
+  .history-detail-heading {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .history-subtitle {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+
+  .history-page-actions .form-reset,
+  .history-page-actions .step-next,
+  .history-empty-actions .form-reset,
+  .history-empty-actions .step-next,
+  .history-modal-actions .form-reset,
+  .history-modal-actions .step-next,
+  .history-detail-nav .secondary-link,
+  .history-detail-nav .step-next {
+    max-width: none;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .history-page-actions .step-next {
+    order: -1;
+  }
+
+  .history-summary-grid {
+    gap: var(--space-sm);
+  }
+
+  .history-metric {
+    min-height: 0;
+    padding: var(--space-lg);
+  }
+
+  .history-metric strong {
+    font-size: 1.65rem;
+  }
+
+  .history-chart-shell,
+  .history-log-shell,
+  .history-detail-card,
+  .history-empty-state {
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+  }
+
+  .history-card-heading {
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  .history-card-heading h2 {
+    font-size: 1.22rem;
+  }
+
+  .history-legend {
+    justify-content: flex-start;
+    font-size: 0.72rem;
+  }
+
+  .history-chart-wrap {
+    margin-inline: calc(var(--space-lg) * -1);
+    overscroll-behavior-x: contain;
+    padding: var(--space-sm) var(--space-lg) var(--space-md);
+    scroll-snap-type: x proximity;
+  }
+
+  .history-chart {
+    width: 680px;
+    min-width: 680px;
+  }
+
+  .history-hover-card {
+    width: min(270px, calc(100vw - 56px));
+  }
+
+  .history-log-shell {
+    overflow: hidden;
+  }
+
+  .history-table-wrap {
+    overflow: visible;
+  }
+
+  .history-records {
+    width: 100%;
+    min-width: 0;
+    display: block;
+    font-size: 0.88rem;
+  }
+
+  .history-records thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .history-records tbody {
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  .history-records tr {
+    display: grid;
+    gap: var(--space-md);
+    border: 1px solid var(--hairline-soft);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+    padding: var(--space-lg);
+  }
+
+  .history-records th,
+  .history-records td {
+    border-bottom: 0;
+  }
+
+  .history-records td {
+    display: grid;
+    grid-template-columns: minmax(86px, 0.34fr) minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+    padding: 0;
+    vertical-align: initial;
+  }
+
+  .history-records td::before {
+    color: var(--mute);
+    content: attr(data-label);
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .history-records td[data-label="Estado"],
+  .history-records td[data-label="Detalle"] {
+    align-items: center;
+  }
+
+  .history-state,
+  .history-probability-cell {
+    min-height: 36px;
+  }
+
+  .history-date-cell {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+    align-items: start;
+  }
+
+  .history-action-toggle-list-compact {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .history-action-toggle-list-compact .history-action-toggle {
+    width: auto;
+    min-width: 44px;
+    min-height: 44px;
+    gap: 7px;
+    padding: 0 12px;
+  }
+
+  .history-action-toggle-list-compact .history-action-toggle span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
+  }
+
+  .history-action-toggle-list-compact .history-action-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .history-pressure-chip-list {
+    gap: 8px;
+  }
+
+  .history-pressure-chip {
+    min-height: 34px;
+    align-items: center;
+  }
+
+  .history-reading-list {
+    min-width: 0;
+  }
+
+  .history-more-link {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--hairline));
+    background: color-mix(in srgb, var(--primary) 7%, var(--canvas));
+    padding: 10px 12px;
+  }
+
+  .history-detail-section {
+    gap: var(--space-lg);
+  }
+
+  .history-detail-nav .secondary-link,
+  .history-detail-nav .step-next {
+    width: 100%;
+  }
+
+  .history-detail-card .history-action-toggle {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .history-detail-values {
+    gap: 10px;
+  }
+
+  .history-pressure-detail-list {
+    gap: var(--space-md);
+  }
+
+  .history-pressure-detail-item {
+    border: 1px solid var(--hairline-soft);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+    padding: var(--space-md);
+  }
+
+  .history-modal-backdrop {
+    align-items: end;
+    justify-items: stretch;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .history-pressure-modal {
+    width: 100%;
+    max-height: min(86dvh, calc(100dvh - 24px));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -18px 42px rgba(40, 35, 31, 0.18);
+    padding: var(--space-xl) var(--space-lg) max(var(--space-lg), env(safe-area-inset-bottom));
+  }
+
+  .history-pressure-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: var(--space-lg);
+  }
+
+  .history-pressure-form label {
+    font-size: 0.84rem;
+  }
+
+  .history-pressure-form input,
+  .history-pressure-form select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .history-pressure-form .pressure-notes {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 520px) and (max-width: 760px) {
+  .history-summary-grid,
+  .history-detail-grid,
+  .history-detail-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .history-records td {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .history-action-toggle-list-compact {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .history-action-toggle-list-compact .history-action-toggle {
+    justify-content: flex-start;
+  }
+
+  .history-chart {
+    width: 620px;
+    min-width: 620px;
+  }
+
+  .history-pressure-form {
+    grid-template-columns: 1fr;
   }
 }

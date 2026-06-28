@@ -1,4 +1,4 @@
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -678,6 +678,19 @@ function HistoryChart({
       }
     : undefined;
 
+  function showPointDetails(point: ChartPoint) {
+    setHoveredPoint(point);
+  }
+
+  function handlePointKeyDown(event: KeyboardEvent<SVGCircleElement>, point: ChartPoint) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    showPointDetails(point);
+  }
+
   return (
     <section className="history-chart-shell" aria-labelledby="history-chart-title">
       <div className="history-card-heading">
@@ -755,35 +768,48 @@ function HistoryChart({
           <path className="history-systolic-line" d={pathFor(points.map((point) => ({ x: point.x, y: point.systolicY })))} />
           <path className="history-diastolic-line" d={pathFor(points.map((point) => ({ x: point.x, y: point.diastolicY })))} />
 
-          {points.map((point) => (
-            <g key={point.evaluation.id}>
-              <text className="history-month-label" x={point.x} y={margin.top + plotHeight + 28} textAnchor="middle">
-                {new Date(point.evaluation.createdAt).toLocaleDateString("es-AR", { month: "short" })}
-              </text>
-              {point.systolicY !== null ? (
-                <circle className="history-systolic-point" cx={point.x} cy={point.systolicY} r="4" />
-              ) : null}
-              {point.diastolicY !== null ? (
-                <circle className="history-diastolic-point" cx={point.x} cy={point.diastolicY} r="4" />
-              ) : null}
-              <circle
-                className={`history-probability-point ${
-                  point.evaluation.probability >= point.evaluation.threshold
-                    ? "history-probability-point-attention"
-                    : "history-probability-point-stable"
-                }`}
-                cx={point.x}
-                cy={point.probabilityY}
-                r="6"
-                tabIndex={0}
-                role="button"
-                aria-label={`Ver lectura de ${formatDateOnly(point.evaluation.createdAt)}`}
-                onFocus={() => setHoveredPoint(point)}
-                onBlur={() => setHoveredPoint(null)}
-                onMouseEnter={() => setHoveredPoint(point)}
-              />
-            </g>
-          ))}
+          {points.map((point) => {
+            const probabilityPointClassName = `history-probability-point ${
+              point.evaluation.probability >= point.evaluation.threshold
+                ? "history-probability-point-attention"
+                : "history-probability-point-stable"
+            }`;
+
+            return (
+              <g key={point.evaluation.id}>
+                <text className="history-month-label" x={point.x} y={margin.top + plotHeight + 28} textAnchor="middle">
+                  {new Date(point.evaluation.createdAt).toLocaleDateString("es-AR", { month: "short" })}
+                </text>
+                {point.systolicY !== null ? (
+                  <circle className="history-systolic-point" cx={point.x} cy={point.systolicY} r="4" />
+                ) : null}
+                {point.diastolicY !== null ? (
+                  <circle className="history-diastolic-point" cx={point.x} cy={point.diastolicY} r="4" />
+                ) : null}
+                <circle
+                  className="history-probability-hit-target"
+                  cx={point.x}
+                  cy={point.probabilityY}
+                  r="20"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Ver lectura de ${formatDateOnly(point.evaluation.createdAt)}`}
+                  onClick={() => showPointDetails(point)}
+                  onFocus={() => showPointDetails(point)}
+                  onBlur={() => setHoveredPoint(null)}
+                  onKeyDown={(event) => handlePointKeyDown(event, point)}
+                  onMouseEnter={() => showPointDetails(point)}
+                />
+                <circle
+                  className={probabilityPointClassName}
+                  cx={point.x}
+                  cy={point.probabilityY}
+                  r="6"
+                  aria-hidden="true"
+                />
+              </g>
+            );
+          })}
         </svg>
 
         {hoveredPoint && hoverPlacement ? (
@@ -841,12 +867,12 @@ function HistoryTable({
 
               return (
                 <tr key={evaluation.id}>
-                  <td>
+                  <td data-label="Estado">
                     <span className={`history-state ${evaluation.probability >= evaluation.threshold ? "history-state-attention" : ""}`}>
                       {status}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Fecha">
                     <span className="history-date-cell">
                       <span>
                         <CalendarDays aria-hidden="true" />
@@ -858,23 +884,23 @@ function HistoryTable({
                       </span>
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Probabilidad">
                     <span className="history-probability-cell">{Math.round(evaluation.probability * 100)}%</span>
                   </td>
-                  <td>
+                  <td data-label="Mis acciones">
                     <ActionToggleGroup
                       actions={evaluation.actions ?? []}
                       compact
                       onToggle={(action) => onToggleAction(evaluation.id, action)}
                     />
                   </td>
-                  <td>
+                  <td data-label="Presión">
                     <PressureChips records={dailyPressure} />
                   </td>
-                  <td>
+                  <td data-label="Lectura">
                     <ReadingFactors factors={getEvaluationFactors(evaluation)} />
                   </td>
-                  <td>
+                  <td data-label="Detalle">
                     <a className="history-more-link" href={`/historial/${encodeURIComponent(evaluation.id)}`}>
                       <Eye aria-hidden="true" />
                       Ver Más
