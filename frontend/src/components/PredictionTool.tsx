@@ -12,6 +12,7 @@ import {
   writeHistory,
   type SavedEvaluation,
 } from "../utils/historyStorage";
+import { getMotionSafeScrollBehavior } from "../utils/motion";
 import { downloadSummaryPdf } from "../utils/pdf";
 import type { SummaryPdfData } from "../utils/pdf";
 import { PageMeta } from "./PageMeta";
@@ -173,7 +174,10 @@ export function PredictionTool() {
           document.querySelector<HTMLElement>(".site-header")?.offsetHeight ?? 64;
         const targetTop = resultSummary.getBoundingClientRect().top + window.scrollY;
         if (!window.navigator.userAgent.toLowerCase().includes("jsdom")) {
-          window.scrollTo({ top: Math.max(0, targetTop - headerHeight - 24) });
+          window.scrollTo({
+            top: Math.max(0, targetTop - headerHeight - 24),
+            behavior: getMotionSafeScrollBehavior(),
+          });
         }
       }
     });

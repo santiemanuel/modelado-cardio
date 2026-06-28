@@ -64,7 +64,7 @@ export function ResourcesPage() {
           ))}
         </div>
 
-        <div className="resource-grid">
+        <div className="resource-grid" key={filter}>
           {filteredResources.map((center) => (
             <article className="resource-card" key={center.name}>
               <span>{center.kind}</span>

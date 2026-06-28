@@ -9,8 +9,41 @@ import { PredictionTool } from "./components/PredictionTool";
 import { PrivacyPage } from "./components/PrivacyPage";
 import { ResourcesPage } from "./components/ResourcesPage";
 
+function getRouteName(normalizedPath: string) {
+  if (normalizedPath === "/") {
+    return "home";
+  }
+  if (normalizedPath === "/evaluar") {
+    return "evaluation";
+  }
+  if (normalizedPath === "/historial" || normalizedPath.startsWith("/historial/")) {
+    return "history";
+  }
+  if (normalizedPath === "/modelo") {
+    return "model";
+  }
+  if (normalizedPath === "/privacidad") {
+    return "privacy";
+  }
+  if (normalizedPath === "/educacion") {
+    return "education";
+  }
+  if (normalizedPath === "/recursos") {
+    return "resources";
+  }
+  if (normalizedPath === "/faq") {
+    return "faq";
+  }
+  if (normalizedPath === "/metodologia" || normalizedPath === "/metodologÃ­a") {
+    return "methodology";
+  }
+
+  return "not-found";
+}
+
 export default function App() {
   const normalizedPath = window.location.pathname.replace(/\/$/, "") || "/";
+  const routeName = getRouteName(normalizedPath);
 
   function renderRoute() {
     if (normalizedPath === "/") {
@@ -54,7 +87,7 @@ export default function App() {
       <a className="skip-link" href="#contenido">
         Saltar al contenido
       </a>
-      <main id="contenido" tabIndex={-1}>
+      <main className={`route-shell route-${routeName}`} id="contenido" tabIndex={-1}>
         {renderRoute()}
       </main>
     </>

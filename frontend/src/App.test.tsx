@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { prohibitedInternalCopy } from "./content/editorialGuidelines";
 import { HISTORY_KEY, PRESSURE_RECORDS_KEY } from "./utils/historyStorage";
+import { getMotionSafeScrollBehavior } from "./utils/motion";
 import { downloadSummaryPdf } from "./utils/pdf";
 
 vi.mock("./utils/pdf", () => ({
@@ -432,6 +433,26 @@ describe("App", () => {
         expect(visibleText).not.toContain(term.toLowerCase());
       }
     }
+  });
+
+  it("keeps programmatic scroll instant for reduced-motion users", () => {
+    const createMatchMedia = (matches: boolean) =>
+      vi.fn((query: string) => ({
+        matches,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(() => false),
+      }));
+
+    vi.stubGlobal("matchMedia", createMatchMedia(true));
+    expect(getMotionSafeScrollBehavior()).toBe("auto");
+
+    vi.stubGlobal("matchMedia", createMatchMedia(false));
+    expect(getMotionSafeScrollBehavior()).toBe("smooth");
   });
 
   it("validates required step fields before calling the API", async () => {
