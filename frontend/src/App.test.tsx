@@ -260,6 +260,17 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/");
   });
 
+  it("shows the site footer on content pages but not on the evaluation route", () => {
+    renderAt("/faq");
+
+    expect(screen.getByRole("contentinfo", { name: "Cierre del sitio" })).toBeInTheDocument();
+
+    cleanup();
+    renderAt("/evaluar");
+
+    expect(screen.queryByRole("contentinfo", { name: "Cierre del sitio" })).not.toBeInTheDocument();
+  });
+
   it("renders an empty local history route without prototype chrome", () => {
     renderAt("/historial");
 

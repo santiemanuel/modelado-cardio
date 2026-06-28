@@ -1,6 +1,7 @@
 import { EducationPage } from "./components/EducationPage";
 import { FaqPage } from "./components/FaqPage";
 import { HistoryPage } from "./components/HistoryPage";
+import { LandingFooter } from "./components/LandingFooter";
 import { LandingPage } from "./components/LandingPage";
 import { MethodologyPage } from "./components/MethodologyPage";
 import { ModelPage } from "./components/ModelPage";
@@ -44,6 +45,7 @@ function getRouteName(normalizedPath: string) {
 export default function App() {
   const normalizedPath = window.location.pathname.replace(/\/$/, "") || "/";
   const routeName = getRouteName(normalizedPath);
+  const shouldShowFooter = routeName !== "evaluation";
 
   function renderRoute() {
     if (normalizedPath === "/") {
@@ -90,6 +92,7 @@ export default function App() {
       <main className={`route-shell route-${routeName}`} id="contenido" tabIndex={-1}>
         {renderRoute()}
       </main>
+      {shouldShowFooter ? <LandingFooter /> : null}
     </>
   );
 }

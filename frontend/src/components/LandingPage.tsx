@@ -1,7 +1,6 @@
 import { CareMosaicSection } from "./CareMosaicSection";
 import { FinalCta } from "./FinalCta";
 import { HeroSection } from "./HeroSection";
-import { LandingFooter } from "./LandingFooter";
 import { LandingHeader } from "./LandingHeader";
 import { LimitsSection } from "./LimitsSection";
 import { ModelSection } from "./ModelSection";
@@ -23,7 +22,6 @@ export function LandingPage() {
       <CareMosaicSection />
       <ModelSection />
       <FinalCta />
-      <LandingFooter />
     </div>
   );
 }
