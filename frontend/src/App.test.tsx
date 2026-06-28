@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
 import { prohibitedInternalCopy } from "./content/editorialGuidelines";
+import { HISTORY_KEY, PRESSURE_RECORDS_KEY } from "./utils/historyStorage";
 import { downloadSummaryPdf } from "./utils/pdf";
 
 vi.mock("./utils/pdf", () => ({
@@ -63,6 +64,54 @@ const simpleResponse = {
   ),
 };
 
+const savedEvaluation = {
+  id: "eval-1",
+  createdAt: "2026-06-27T12:30:00",
+  probability: validResponse.probability,
+  threshold: validResponse.threshold,
+  modelName: validResponse.model_name,
+  modelVersion: "case1-logreg-no-indfmpir-v2",
+  riskLabel: validResponse.risk_label,
+  context: validResponse.context,
+  mode: "complete",
+  bmi: "31.7",
+  result: {
+    ...validResponse,
+    mode: "complete",
+    model_version: "case1-logreg-no-indfmpir-v2",
+  },
+  shapExplanations: validResponse.shap_explanations,
+  actions: [],
+  values: [
+    { label: "Edad", value: "66 a\u00f1os" },
+    { label: "Peso", value: "90.5 kg" },
+    { label: "Altura", value: "169 cm" },
+    { label: "Cintura", value: "101.8 cm" },
+  ],
+};
+
+const savedPressureRecord = {
+  id: "pressure-1",
+  date: "2026-06-27",
+  time: "08:10",
+  systolic: "142",
+  diastolic: "88",
+  pulse: "72",
+  arm: "Izquierdo",
+  notes: "Reposo",
+};
+
+function seedHistory({
+  history = [savedEvaluation],
+  pressureRecords = [savedPressureRecord],
+}: {
+  history?: unknown[];
+  pressureRecords?: unknown[];
+} = {}) {
+  window.localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  window.localStorage.setItem(PRESSURE_RECORDS_KEY, JSON.stringify(pressureRecords));
+}
+
 function renderAt(path: string) {
   window.history.pushState({}, "", path);
   return render(<App />);
@@ -100,6 +149,7 @@ async function reachLaboratoryStep(user = userEvent.setup()) {
 
 describe("App", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     vi.mocked(downloadSummaryPdf).mockClear();
     vi.stubGlobal(
       "fetch",
@@ -112,6 +162,7 @@ describe("App", () => {
 
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
     window.history.pushState({}, "", "/");
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -208,6 +259,105 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/");
   });
 
+  it("renders an empty local history route without prototype chrome", () => {
+    renderAt("/historial");
+
+    expect(screen.getByRole("heading", { name: "Seguimiento" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Todavía no hay mediciones guardadas" })).toBeInTheDocument();
+    expect(screen.queryByText(/V7/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Prob\. \+ PA/i })).not.toBeInTheDocument();
+  });
+
+  it("renders saved history with chart, table columns, pressure records and reading factors", () => {
+    seedHistory();
+    renderAt("/historial");
+
+    expect(screen.getByRole("heading", { name: "Probabilidad y presión" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Estado" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Fecha" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Prob." })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Mis acciones" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Registros de presión" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Lectura" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Ver Más" })).toBeInTheDocument();
+    expect(screen.getAllByText("72%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("27/06/2026").length).toBeGreaterThan(0);
+    expect(screen.getByText("12:30")).toBeInTheDocument();
+    expect(screen.getAllByText("142/88").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Edad").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("66 años").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Ver Más/i })).toHaveAttribute("href", "/historial/eval-1");
+    expect(document.body).not.toHaveTextContent(/tomas del día/i);
+    expect(document.body).not.toHaveTextContent("Prob. + PA");
+  });
+
+  it("persists user actions per saved measurement", async () => {
+    seedHistory();
+    const user = userEvent.setup();
+    renderAt("/historial");
+
+    const nutrition = screen.getByRole("button", { name: /Alimentaci.n/i });
+    expect(nutrition).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(nutrition);
+
+    expect(nutrition).toHaveAttribute("aria-pressed", "true");
+    const storedHistory = JSON.parse(window.localStorage.getItem(HISTORY_KEY) ?? "[]");
+    expect(storedHistory[0].actions).toContain("nutrition");
+  });
+
+  it("adds a pressure record from the history modal and associates it by date", async () => {
+    seedHistory({ pressureRecords: [] });
+    const user = userEvent.setup();
+    renderAt("/historial");
+
+    await user.click(screen.getAllByRole("button", { name: /Agregar presión/i })[0]);
+    await user.clear(screen.getByLabelText("Fecha"));
+    await user.type(screen.getByLabelText("Fecha"), "2026-06-27");
+    await user.clear(screen.getByLabelText("Sistólica"));
+    await user.type(screen.getByLabelText("Sistólica"), "130");
+    await user.clear(screen.getByLabelText("Diastólica"));
+    await user.type(screen.getByLabelText("Diastólica"), "80");
+    await user.type(screen.getByLabelText("Pulso"), "70");
+    await user.click(screen.getByRole("button", { name: "Guardar presión" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getAllByText("130/80").length).toBeGreaterThan(0);
+    const storedPressure = JSON.parse(window.localStorage.getItem(PRESSURE_RECORDS_KEY) ?? "[]");
+    expect(storedPressure[0]).toMatchObject({
+      date: "2026-06-27",
+      systolic: "130",
+      diastolic: "80",
+    });
+  });
+
+  it("clears history and pressure records after confirmation", async () => {
+    seedHistory();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    renderAt("/historial");
+
+    await user.click(screen.getByRole("button", { name: /Eliminar todos los datos/i }));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Todavía no hay mediciones guardadas" })).toBeInTheDocument();
+    expect(window.localStorage.getItem(HISTORY_KEY)).toBeNull();
+    expect(window.localStorage.getItem(PRESSURE_RECORDS_KEY)).toBeNull();
+  });
+
+  it("renders saved measurement detail with result explanation and pressure records for that day", () => {
+    seedHistory();
+    renderAt("/historial/eval-1");
+
+    expect(screen.getByRole("heading", { name: "Resultado guardado" })).toBeInTheDocument();
+    expect(screen.getByText("señales compatibles con hipertensión")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mediciones del día" })).toBeInTheDocument();
+    expect(screen.getAllByText("142/88 mmHg").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reposo")).toBeInTheDocument();
+    expect(screen.getByText("Edad comparada con el punto base del modelo.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Acciones realizadas" })).toBeInTheDocument();
+  });
+
   it("renders education, methodology, and model detail sections", () => {
     renderAt("/educacion");
 
@@ -274,7 +424,7 @@ describe("App", () => {
   });
 
   it("keeps public pages free of internal implementation notes", () => {
-    for (const path of ["/", "/modelo", "/privacidad", "/educacion", "/recursos", "/faq", "/metodologia", "/404"]) {
+    for (const path of ["/", "/historial", "/modelo", "/privacidad", "/educacion", "/recursos", "/faq", "/metodologia", "/404"]) {
       cleanup();
       renderAt(path);
       const visibleText = document.body.textContent?.toLowerCase() ?? "";
@@ -534,7 +684,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Realizar un nuevo test" })).toBeInTheDocument();
     expect(screen.getByText("Volver al inicio").closest("a")).toHaveAttribute("href", "/");
     expect(fetch).toHaveBeenCalledWith(
-      "http://127.0.0.1:8000/predict",
+      "/api/predict",
       expect.objectContaining({ method: "POST" }),
     );
     const requestBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
@@ -631,7 +781,7 @@ describe("App", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(fetch).toHaveBeenCalledWith(
-      "http://127.0.0.1:8000/predict-simple",
+      "/api/predict-simple",
       expect.objectContaining({ method: "POST" }),
     );
     const requestBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));

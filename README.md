@@ -166,25 +166,25 @@ python -m venv backend/.venv
 .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
 ```
 
-La API queda disponible en `http://127.0.0.1:8000`.
+La API queda disponible en `http://127.0.0.1:8000/api`.
 
 Probar salud:
 
 ```bash
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/api/health
 ```
 
 Información del modelo activo:
 
 ```bash
-curl http://127.0.0.1:8000/model-info
-curl http://127.0.0.1:8000/thresholds
+curl http://127.0.0.1:8000/api/model-info
+curl http://127.0.0.1:8000/api/thresholds
 ```
 
 Ejemplo de predicción:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/predict \
+curl -X POST http://127.0.0.1:8000/api/predict \
   -H "Content-Type: application/json" \
   -d "{\"RIDAGEYR\":66,\"BMXBMI\":31.7,\"BMXWAIST\":101.8,\"LBXTC\":157,\"LBDHDD\":60,\"LBXGH\":6.2,\"sex\":\"Female\",\"race_ethnicity\":\"Non-Hispanic Black\",\"current_smoker\":0.0}"
 ```
@@ -192,7 +192,7 @@ curl -X POST http://127.0.0.1:8000/predict \
 Ejemplo de predicción simple sin laboratorio reciente:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/predict-simple \
+curl -X POST http://127.0.0.1:8000/api/predict-simple \
   -H "Content-Type: application/json" \
   -d "{\"RIDAGEYR\":66,\"BMXBMI\":31.7,\"BMXWAIST\":101.8,\"sex\":\"Female\",\"race_ethnicity\":\"Non-Hispanic Black\",\"current_smoker\":0.0}"
 ```
@@ -201,9 +201,9 @@ El modo simple no usa colesterol total, HDL ni HbA1c. El resultado debe interpre
 
 ### Configuración CORS
 
-Por defecto, el backend acepta `http://localhost:5173` y `http://127.0.0.1:5173`.
+En desarrollo local, Vite reenvia `/api` a `http://127.0.0.1:8000`, por lo que no hace falta CORS para el flujo normal.
 
-Para previews o puertos alternativos, definir una lista separada por coma:
+Para previews o dominios externos que llamen directo a la API, definir una lista separada por coma:
 
 ```powershell
 $env:CORS_ALLOW_ORIGINS="http://localhost:5173,http://127.0.0.1:5174,https://preview.example"
@@ -240,12 +240,36 @@ npm install
 npm run dev
 ```
 
-El frontend queda disponible en `http://127.0.0.1:5173`.
+El frontend queda disponible en `http://127.0.0.1:5173` y llama a la API mediante `/api`.
 
 Si la API corre en otra URL, crear `frontend/.env.local` con:
 
 ```bash
-VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+## Deploy con Docker y Nginx Proxy Manager
+
+El deploy usa un solo dominio:
+
+* `https://pagina.com/` apunta al frontend.
+* `https://pagina.com/api/*` apunta al backend FastAPI.
+
+Levantar los servicios:
+
+```bash
+docker compose up -d --build
+```
+
+En Nginx Proxy Manager crear un proxy host para `pagina.com`:
+
+* Details: forward a `cardio-frontend`, port `80`.
+* Custom location `/api`: forward a `cardio-backend`, port `8000`, preservando el path `/api`.
+
+Si la red Docker de Nginx Proxy Manager no se llama `nginx-proxy-manager_default`, definir `NPM_NETWORK` antes de levantar:
+
+```bash
+NPM_NETWORK=nombre_real_de_la_red docker compose up -d --build
 ```
 
 ## Ejecutar tests
@@ -295,13 +319,13 @@ Se evaluaron dos variantes con un umbral de decisión por defecto de 0.5:
 
 ### 4.2. Análisis de Umbrales de Decisión (Thresholds)
 
-El análisis de diferentes puntos de corte permite ajustar el comportamiento del modelo para priorizar detección o precisión. El backend expone los thresholds documentados del modelo activo en `/thresholds`.
+El análisis de diferentes puntos de corte permite ajustar el comportamiento del modelo para priorizar detección o precisión. El backend expone los thresholds documentados del modelo activo en `/api/thresholds`.
 
 Thresholds disponibles para `case1-logreg-no-indfmpir-v2`:
 
 | Nombre | Umbral | Uso |
 | :--- | :---: | :--- |
-| `default` | 0.50 | Umbral operativo usado por `/predict`. |
+| `default` | 0.50 | Umbral operativo usado por `/api/predict`. |
 | `max_f1_validation` | 0.42 | Umbral con mayor F1 ponderado en validación. |
 | `screening_recall_80_validation` | 0.48 | Umbral de validación orientado a recall ponderado de al menos 0.80. |
 

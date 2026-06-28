@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -19,6 +19,7 @@ from app.schemas import (
 )
 
 
+API_PREFIX = "/api"
 DEFAULT_CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 
@@ -36,6 +37,9 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
         title="Cardiometabolic Screening API",
         version="0.1.0",
         description="Local API for indirect hypertension signal prediction.",
+        docs_url=f"{API_PREFIX}/docs",
+        redoc_url=f"{API_PREFIX}/redoc",
+        openapi_url=f"{API_PREFIX}/openapi.json",
     )
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -51,11 +55,13 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
     model_service = ModelService()
     app.state.model_service = model_service
 
-    @app.get("/health", response_model=HealthResponse)
+    router = APIRouter(prefix=API_PREFIX)
+
+    @router.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
         return HealthResponse(status="ok", model_loaded=model_service.model is not None)
 
-    @app.get("/model-info", response_model=ModelInfoResponse)
+    @router.get("/model-info", response_model=ModelInfoResponse)
     def model_info() -> ModelInfoResponse:
         return ModelInfoResponse(
             model_name=model_service.model_name,
@@ -75,7 +81,7 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
             model_summaries=model_service.model_summaries(),
         )
 
-    @app.get("/thresholds", response_model=ThresholdsResponse)
+    @router.get("/thresholds", response_model=ThresholdsResponse)
     def thresholds() -> ThresholdsResponse:
         return ThresholdsResponse(
             model_name=model_service.model_name,
@@ -84,13 +90,15 @@ def create_app(rate_limit: str | None = None) -> FastAPI:
             thresholds=model_service.thresholds(),
         )
 
-    @app.post("/predict", response_model=PredictionResponse)
+    @router.post("/predict", response_model=PredictionResponse)
     def predict(request: Request, payload: PredictionRequest) -> PredictionResponse:
         return model_service.predict(payload)
 
-    @app.post("/predict-simple", response_model=PredictionResponse)
+    @router.post("/predict-simple", response_model=PredictionResponse)
     def predict_simple(request: Request, payload: SimplePredictionRequest) -> PredictionResponse:
         return model_service.predict_simple(payload)
+
+    app.include_router(router)
 
     return app
 

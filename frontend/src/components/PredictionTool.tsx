@@ -6,10 +6,15 @@ import type { PredictionResponse } from "../api";
 import logoImage from "../assets/landing/logo.png";
 import { buttonLabels, presetSafetyCopy } from "../content/evaluationContent";
 import { getResultRange } from "../content/siteContent";
+import {
+  createLocalId,
+  readHistory,
+  writeHistory,
+  type SavedEvaluation,
+} from "../utils/historyStorage";
 import { downloadSummaryPdf } from "../utils/pdf";
 import type { SummaryPdfData } from "../utils/pdf";
 import { PageMeta } from "./PageMeta";
-import type { SavedEvaluation } from "./FollowUpPanels";
 import { LandingHeader } from "./LandingHeader";
 import { PredictionForm } from "./PredictionForm";
 import { PredictionIntro } from "./PredictionIntro";
@@ -24,8 +29,6 @@ import {
   validateForm,
 } from "./predictionFormConfig";
 import type { EvaluationMode, FormState } from "./predictionFormConfig";
-
-const HISTORY_KEY = "cardio-screening-history-v1";
 
 function formatModelName(modelName: string) {
   if (modelName === "logistic_regression" || modelName === "logistic_regression_no_indfmpir") {
@@ -61,10 +64,6 @@ function formatPdfFactorLabel(feature: string, label: string) {
   }
 
   return label;
-}
-
-function createLocalId() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 type EvaluationStartScreenProps = {
@@ -159,11 +158,7 @@ export function PredictionTool() {
   }
 
   useEffect(() => {
-    try {
-      setHistory(JSON.parse(window.localStorage.getItem(HISTORY_KEY) ?? "[]"));
-    } catch {
-      setHistory([]);
-    }
+    setHistory(readHistory());
   }, []);
 
   useEffect(() => {
@@ -188,7 +183,7 @@ export function PredictionTool() {
 
   function persistHistory(nextHistory: SavedEvaluation[]) {
     setHistory(nextHistory);
-    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
+    writeHistory(nextHistory);
   }
 
   function applyFormState(nextForm: FormState) {
@@ -331,7 +326,18 @@ export function PredictionTool() {
       probability: result.probability,
       threshold: result.threshold,
       modelName: result.model_name,
+      modelVersion: result.model_version,
+      riskLabel: result.risk_label,
+      context: result.context,
+      mode: result.mode ?? evaluationMode,
       bmi: getBmiText(),
+      result: {
+        ...result,
+        mode: result.mode ?? evaluationMode,
+        shap_explanations: result.shap_explanations ?? [],
+      },
+      shapExplanations: result.shap_explanations ?? [],
+      actions: [],
       values: [
         { label: "Edad", value: `${form.RIDAGEYR} años` },
         { label: "Peso", value: `${form.BMXWT} kg` },
@@ -344,8 +350,8 @@ export function PredictionTool() {
               { label: "HbA1c", value: `${form.LBXGH}%` },
             ]
           : [{ label: "Laboratorio", value: "No incluido en modo simple" }]),
-        { label: "Sexo reportado", value: form.sex },
-        { label: "Grupo étnico reportado", value: form.race_ethnicity },
+        { label: "Sexo reportado", value: formatSex(form.sex) },
+        { label: "Grupo étnico reportado", value: formatRace(form.race_ethnicity) },
         {
           label: "Fumador actual",
           value: form.current_smoker === "1.0" ? "Sí" : "No",

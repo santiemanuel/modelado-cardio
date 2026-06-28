@@ -3,6 +3,7 @@ import type { PredictionPayload } from "../api";
 export const routes = [
   { path: "/", label: "Inicio" },
   { path: "/evaluar", label: "Evaluar señales" },
+  { path: "/historial", label: "Historial" },
   { path: "/modelo", label: "Modelo" },
   { path: "/educacion", label: "Educación" },
   { path: "/recursos", label: "Recursos" },

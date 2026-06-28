@@ -9,6 +9,11 @@ export const pageMeta = {
     description:
       "Formulario orientativo para estimar señales compatibles con hipertensión a partir de edad, mediciones corporales, laboratorio y hábitos.",
   },
+  history: {
+    title: "Historial local | Presión Bajo Control",
+    description:
+      "Seguimiento local de evaluaciones guardadas, registros manuales de presión arterial y acciones realizadas por el usuario.",
+  },
   model: {
     title: "Sobre el modelo | Presión Bajo Control",
     description:

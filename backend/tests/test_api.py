@@ -25,14 +25,14 @@ def test_model_loads() -> None:
 
 def test_health() -> None:
     client = TestClient(create_app())
-    response = client.get("/health")
+    response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "model_loaded": True}
 
 
 def test_predict_valid_payload() -> None:
     client = TestClient(create_app())
-    response = client.post("/predict", json=VALID_PAYLOAD)
+    response = client.post("/api/predict", json=VALID_PAYLOAD)
     body = response.json()
 
     assert response.status_code == 200
@@ -78,7 +78,7 @@ def test_predict_rejects_missing_required_field() -> None:
     payload = dict(VALID_PAYLOAD)
     payload.pop("BMXBMI")
 
-    response = client.post("/predict", json=payload)
+    response = client.post("/api/predict", json=payload)
 
     assert response.status_code == 422
 
@@ -105,7 +105,7 @@ def test_predict_simple_uses_model_without_laboratory_fields() -> None:
         "current_smoker": 0.0,
     }
 
-    response = client.post("/predict-simple", json=payload)
+    response = client.post("/api/predict-simple", json=payload)
     body = response.json()
 
     assert response.status_code == 200
@@ -120,7 +120,7 @@ def test_predict_simple_uses_model_without_laboratory_fields() -> None:
 def test_model_info_exposes_versioned_metadata() -> None:
     client = TestClient(create_app())
 
-    response = client.get("/model-info")
+    response = client.get("/api/model-info")
     body = response.json()
 
     assert response.status_code == 200
@@ -137,7 +137,7 @@ def test_model_info_exposes_versioned_metadata() -> None:
 def test_thresholds_endpoint_exposes_named_options() -> None:
     client = TestClient(create_app())
 
-    response = client.get("/thresholds")
+    response = client.get("/api/thresholds")
     body = response.json()
 
     assert response.status_code == 200
@@ -151,7 +151,7 @@ def test_cors_origins_can_be_configured(monkeypatch) -> None:
     client = TestClient(create_app())
 
     response = client.options(
-        "/health",
+        "/api/health",
         headers={
             "Origin": "https://preview.example",
             "Access-Control-Request-Method": "GET",
@@ -165,6 +165,6 @@ def test_cors_origins_can_be_configured(monkeypatch) -> None:
 def test_rate_limit_applies_per_ip() -> None:
     client = TestClient(create_app(rate_limit="2/minute"))
 
-    assert client.get("/health").status_code == 200
-    assert client.get("/health").status_code == 200
-    assert client.get("/health").status_code == 429
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/api/health").status_code == 429

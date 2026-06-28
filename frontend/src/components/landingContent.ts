@@ -12,7 +12,7 @@ export const assessmentRoute = "/evaluar";
 
 export const navLinks = routes
   .filter((route) =>
-    ["/", "/modelo", "/educacion", "/recursos", "/faq", "/privacidad"].includes(
+    ["/", "/historial", "/modelo", "/educacion", "/recursos", "/faq", "/privacidad"].includes(
       route.path,
     ),
   )

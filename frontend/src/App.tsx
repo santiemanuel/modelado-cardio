@@ -1,5 +1,6 @@
 import { EducationPage } from "./components/EducationPage";
 import { FaqPage } from "./components/FaqPage";
+import { HistoryPage } from "./components/HistoryPage";
 import { LandingPage } from "./components/LandingPage";
 import { MethodologyPage } from "./components/MethodologyPage";
 import { ModelPage } from "./components/ModelPage";
@@ -17,6 +18,12 @@ export default function App() {
     }
     if (normalizedPath === "/evaluar") {
       return <PredictionTool />;
+    }
+    if (normalizedPath === "/historial") {
+      return <HistoryPage />;
+    }
+    if (normalizedPath.startsWith("/historial/")) {
+      return <HistoryPage evaluationId={normalizedPath.replace("/historial/", "")} />;
     }
     if (normalizedPath === "/modelo") {
       return <ModelPage />;

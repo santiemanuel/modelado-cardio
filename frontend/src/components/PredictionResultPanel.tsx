@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 import type { PredictionResponse, ShapExplanation } from "../api";
 import { stateCopy } from "../content/evaluationContent";
@@ -35,28 +36,14 @@ type ShapDirectionTone = "up" | "down" | "neutral";
 
 function ShapDirectionIcon({ tone }: { tone: ShapDirectionTone }) {
   if (tone === "up") {
-    return (
-      <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M12 19V5" />
-        <path d="m6 11 6-6 6 6" />
-      </svg>
-    );
+    return <ArrowUp className="shap-direction-icon" aria-hidden="true" />;
   }
 
   if (tone === "down") {
-    return (
-      <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M12 5v14" />
-        <path d="m6 13 6 6 6-6" />
-      </svg>
-    );
+    return <ArrowDown className="shap-direction-icon" aria-hidden="true" />;
   }
 
-  return (
-    <svg className="shap-direction-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M6 12h12" />
-    </svg>
-  );
+  return <Minus className="shap-direction-icon" aria-hidden="true" />;
 }
 
 function getProbabilityGuidance(probability: number): ProbabilityGuidance {
