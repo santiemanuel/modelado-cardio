@@ -481,10 +481,21 @@ function PressureDayPanel({
                 <Clock3 aria-hidden="true" />
                 <strong>{record.time}</strong>
               </div>
-              <p>
-                <span>{record.systolic}/{record.diastolic} mmHg</span>
-                {record.pulse ? <span>Pulso {record.pulse}</span> : null}
-                <span>{record.arm}</span>
+              <p className="history-pressure-reading-row">
+                <span className="history-pressure-reading history-pressure-reading-pressure">
+                  <span className="history-pressure-reading-label">Presión</span>
+                  <strong>{record.systolic}/{record.diastolic} mmHg</strong>
+                </span>
+                {record.pulse ? (
+                  <span className="history-pressure-reading history-pressure-reading-pulse">
+                    <span className="history-pressure-reading-label">Pulso</span>
+                    <strong>{record.pulse}</strong>
+                  </span>
+                ) : null}
+                <span className="history-pressure-reading history-pressure-reading-arm">
+                  <span className="history-pressure-reading-label">Brazo</span>
+                  <strong>{record.arm}</strong>
+                </span>
               </p>
               {record.notes ? <small>{record.notes}</small> : null}
             </article>

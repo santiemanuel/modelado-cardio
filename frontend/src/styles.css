@@ -3392,8 +3392,26 @@ h3 {
 }
 
 .next-steps-block .plain-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-lg) var(--space-xl);
+  padding-left: 0;
+  list-style: none;
+}
+
+.next-steps-block .plain-list li {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.next-steps-block .plain-list li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: 0.68em;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--risk-color) 70%, var(--ink));
 }
 
 .next-steps-block h3 {
@@ -4418,6 +4436,58 @@ h3 {
   color: var(--body);
   font-family: var(--font-body);
   font-weight: 800;
+}
+
+.history-pressure-reading-row {
+  row-gap: 7px;
+}
+
+.history-pressure-reading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 28px;
+  border: 1px solid var(--pressure-reading-border, var(--hairline-soft));
+  border-radius: 8px;
+  background: var(--pressure-reading-bg, var(--surface-soft));
+  color: var(--pressure-reading-text, var(--body));
+  padding: 5px 9px;
+  line-height: 1.1;
+}
+
+.history-pressure-reading-label {
+  color: var(--pressure-reading-label, var(--mute));
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.history-pressure-reading strong {
+  color: inherit;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.history-pressure-reading-pressure {
+  --pressure-reading-bg: #fff2f3;
+  --pressure-reading-border: #f4c7cf;
+  --pressure-reading-label: #a00b22;
+  --pressure-reading-text: #4d0711;
+}
+
+.history-pressure-reading-pulse {
+  --pressure-reading-bg: #edf7f2;
+  --pressure-reading-border: #c9e6d8;
+  --pressure-reading-label: #236149;
+  --pressure-reading-text: #1f4639;
+}
+
+.history-pressure-reading-arm {
+  --pressure-reading-bg: #f5f1e9;
+  --pressure-reading-border: #ded7c8;
+  --pressure-reading-label: #6b5e4f;
+  --pressure-reading-text: #342b24;
 }
 
 .history-pressure-detail-item small {
