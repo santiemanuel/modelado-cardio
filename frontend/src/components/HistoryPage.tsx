@@ -1,5 +1,6 @@
 import type { CSSProperties, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Activity,
   ArrowDown,
@@ -37,6 +38,7 @@ import {
   type PressureRecord,
   type SavedEvaluation,
 } from "../utils/historyStorage";
+import { ContextDropdown } from "./ContextDropdown";
 import { LandingHeader } from "./LandingHeader";
 import { PageMeta } from "./PageMeta";
 import { PredictionResultPanel } from "./PredictionResultPanel";
@@ -46,6 +48,12 @@ type HistoryPageProps = {
 };
 
 type PressureFormValues = Omit<PressureRecord, "id">;
+
+const pressureArmOptions = [
+  { value: "No informado", label: "No informado" },
+  { value: "Izquierdo", label: "Izquierdo" },
+  { value: "Derecho", label: "Derecho" },
+];
 
 type ChartPoint = {
   evaluation: SavedEvaluation;
@@ -279,6 +287,7 @@ function PressureRecordModal({
 }) {
   const [values, setValues] = useState<PressureFormValues>(() => getInitialPressureForm(defaultDate));
   const [error, setError] = useState<string | null>(null);
+  const [isArmDropdownOpen, setIsArmDropdownOpen] = useState(false);
 
   function updateField<K extends keyof PressureFormValues>(key: K, value: PressureFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -315,7 +324,7 @@ function PressureRecordModal({
     onClose();
   }
 
-  return (
+  return createPortal(
     <div className="modal-backdrop history-modal-backdrop" role="presentation">
       <form
         className="history-pressure-modal"
@@ -366,6 +375,7 @@ function PressureRecordModal({
             <input
               name="systolic"
               inputMode="numeric"
+              placeholder="Ej. 120"
               required
               value={values.systolic}
               onChange={(event) => updateField("systolic", event.target.value)}
@@ -376,6 +386,7 @@ function PressureRecordModal({
             <input
               name="diastolic"
               inputMode="numeric"
+              placeholder="Ej. 80"
               required
               value={values.diastolic}
               onChange={(event) => updateField("diastolic", event.target.value)}
@@ -386,18 +397,21 @@ function PressureRecordModal({
             <input
               name="pulse"
               inputMode="numeric"
+              placeholder="Opcional, ej. 72"
               value={values.pulse}
               onChange={(event) => updateField("pulse", event.target.value)}
             />
           </label>
-          <label>
-            Brazo
-            <select name="arm" value={values.arm} onChange={(event) => updateField("arm", event.target.value)}>
-              <option>No informado</option>
-              <option>Izquierdo</option>
-              <option>Derecho</option>
-            </select>
-          </label>
+          <ContextDropdown
+            id="history-pressure-arm"
+            label="Brazo"
+            value={values.arm}
+            options={pressureArmOptions}
+            isOpen={isArmDropdownOpen}
+            className="pressure-form-field"
+            onChange={(value) => updateField("arm", value)}
+            onOpenChange={setIsArmDropdownOpen}
+          />
           <label className="pressure-notes">
             Observaciones
             <input
@@ -418,7 +432,8 @@ function PressureRecordModal({
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -709,10 +724,16 @@ function HistoryChart({
           <p className="section-kicker">Evolución</p>
           <h2 id="history-chart-title">Probabilidad y presión</h2>
         </div>
-        <div className="history-legend" aria-hidden="true">
-          <span><i className="history-dot history-dot-probability" />Probabilidad</span>
-          <span><i className="history-dot history-dot-systolic" />Sistólica prom.</span>
-          <span><i className="history-dot history-dot-diastolic" />Diastólica prom.</span>
+        <div className="history-legends" aria-hidden="true">
+          <div className="history-legend">
+            <span><i className="history-dot history-dot-probability" />Probabilidad</span>
+            <span><i className="history-dot history-dot-systolic" />Sistólica prom.</span>
+            <span><i className="history-dot history-dot-diastolic" />Diastólica prom.</span>
+          </div>
+          <div className="history-reference-legend">
+            <span><i className="history-reference-line history-reference-line-probability" />Umbral probabilidad 50%</span>
+            <span><i className="history-reference-line history-reference-line-systolic" />Referencia sistólica 140 mmHg</span>
+          </div>
         </div>
       </div>
 
@@ -927,7 +948,7 @@ function HistoryTable({
   );
 }
 
-function EmptyHistoryState({ onAddPressure }: { onAddPressure: () => void }) {
+function EmptyHistoryState() {
   return (
     <section className="history-empty-state" aria-labelledby="history-empty-title">
       <p className="section-kicker">Historial local</p>
@@ -935,10 +956,6 @@ function EmptyHistoryState({ onAddPressure }: { onAddPressure: () => void }) {
       <p>{stateCopy.historyEmpty}</p>
       <div className="history-empty-actions">
         <a className="step-next" href="/evaluar">Ir a evaluar señales</a>
-        <button className="form-reset" type="button" onClick={onAddPressure}>
-          <Plus aria-hidden="true" />
-          Agregar presión
-        </button>
       </div>
     </section>
   );
@@ -1027,10 +1044,6 @@ export function HistoryPage({ evaluationId }: HistoryPageProps) {
               <Trash2 aria-hidden="true" />
               Eliminar todos los datos
             </button>
-            <button className="step-next" type="button" onClick={() => setPressureModalDate(toLocalDateKey(new Date()))}>
-              <Plus aria-hidden="true" />
-              Agregar presión
-            </button>
           </div>
         </div>
 
@@ -1041,17 +1054,9 @@ export function HistoryPage({ evaluationId }: HistoryPageProps) {
             <HistoryTable history={history} pressureRecords={pressureRecords} onToggleAction={toggleAction} />
           </>
         ) : (
-          <EmptyHistoryState onAddPressure={() => setPressureModalDate(toLocalDateKey(new Date()))} />
+          <EmptyHistoryState />
         )}
       </section>
-
-      {pressureModalDate ? (
-        <PressureRecordModal
-          defaultDate={pressureModalDate}
-          onClose={() => setPressureModalDate(null)}
-          onSave={addPressureRecord}
-        />
-      ) : null}
     </div>
   );
 }

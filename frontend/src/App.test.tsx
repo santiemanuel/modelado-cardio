@@ -278,6 +278,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Todavía no hay mediciones guardadas" })).toBeInTheDocument();
     expect(screen.queryByText(/V7/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Prob\. \+ PA/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Agregar presión/i })).not.toBeInTheDocument();
   });
 
   it("renders saved history with chart, table columns, pressure records and reading factors", () => {
@@ -285,6 +286,8 @@ describe("App", () => {
     renderAt("/historial");
 
     expect(screen.getByRole("heading", { name: "Probabilidad y presión" })).toBeInTheDocument();
+    expect(screen.getByText("Umbral probabilidad 50%")).toBeInTheDocument();
+    expect(screen.getByText("Referencia sistólica 140 mmHg")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Estado" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Fecha" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Prob." })).toBeInTheDocument();
@@ -299,6 +302,7 @@ describe("App", () => {
     expect(screen.getAllByText("Edad").length).toBeGreaterThan(0);
     expect(screen.getAllByText("66 años").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /Ver Más/i })).toHaveAttribute("href", "/historial/eval-1");
+    expect(screen.queryByRole("button", { name: /Agregar presión/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/tomas del día/i);
     expect(document.body).not.toHaveTextContent("Prob. + PA");
   });
@@ -318,12 +322,15 @@ describe("App", () => {
     expect(storedHistory[0].actions).toContain("nutrition");
   });
 
-  it("adds a pressure record from the history modal and associates it by date", async () => {
+  it("adds a pressure record from the detail modal and associates it by date", async () => {
     seedHistory({ pressureRecords: [] });
     const user = userEvent.setup();
-    renderAt("/historial");
+    renderAt("/historial/eval-1");
 
     await user.click(screen.getAllByRole("button", { name: /Agregar presión/i })[0]);
+    expect(screen.getByPlaceholderText("Ej. 120")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ej. 80")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Opcional, ej. 72")).toBeInTheDocument();
     await user.clear(screen.getByLabelText("Fecha"));
     await user.type(screen.getByLabelText("Fecha"), "2026-06-27");
     await user.clear(screen.getByLabelText("Sistólica"));
@@ -334,7 +341,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Guardar presión" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getAllByText("130/80").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/130\/80 mmHg/).length).toBeGreaterThan(0);
     const storedPressure = JSON.parse(window.localStorage.getItem(PRESSURE_RECORDS_KEY) ?? "[]");
     expect(storedPressure[0]).toMatchObject({
       date: "2026-06-27",

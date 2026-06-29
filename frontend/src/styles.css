@@ -136,6 +136,12 @@ body {
   overflow-x: hidden;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
+  color: var(--on-dark);
+  text-shadow: none;
+}
+
 p,
 li,
 dd,
@@ -869,6 +875,10 @@ h3 {
   padding: var(--space-section) 0;
 }
 
+.prediction-page .prediction-section {
+  padding-top: clamp(var(--space-xl), 4vw, 40px);
+}
+
 .problem-section {
   display: grid;
   grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
@@ -1447,6 +1457,7 @@ h3 {
   gap: var(--space-xl);
   overflow: visible;
   padding: var(--space-xxl);
+  padding-bottom: var(--space-xl);
 }
 
 .prediction-form > :not(.form-watermark) {
@@ -1619,11 +1630,16 @@ h3 {
 }
 
 .form-step-panel {
+  position: relative;
   min-height: 220px;
   display: grid;
   align-content: start;
   gap: var(--space-lg);
   animation: form-step-in var(--motion-state) var(--ease-out-quart) both;
+}
+
+.prediction-form > .form-step-panel {
+  z-index: 3;
 }
 
 @keyframes form-step-in {
@@ -1927,6 +1943,11 @@ h3 {
   position: relative;
   display: grid;
   gap: 6px;
+  z-index: 0;
+}
+
+.context-dropdown-open {
+  z-index: calc(var(--z-sticky) + 3);
 }
 
 .context-dropdown-label {
@@ -1984,7 +2005,7 @@ h3 {
 
 .context-dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   left: 0;
   z-index: calc(var(--z-sticky) + 2);
@@ -1992,9 +2013,10 @@ h3 {
   gap: 4px;
   border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--hairline));
   border-radius: var(--radius-md);
+  background: var(--canvas);
   background: color-mix(in srgb, var(--primary) 3%, var(--canvas));
   padding: 6px;
-  box-shadow: 0 4px 8px rgba(23, 20, 18, 0.12);
+  box-shadow: 0 8px 18px rgba(23, 20, 18, 0.18);
   animation: dropdown-in var(--motion-state) var(--ease-out-quart) both;
 }
 
@@ -2169,6 +2191,7 @@ h3 {
 }
 
 .form-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
@@ -2176,6 +2199,10 @@ h3 {
   justify-content: space-between;
   border-top: 1px solid var(--hairline);
   padding-top: var(--space-xl);
+}
+
+.prediction-form > .form-actions {
+  z-index: 1;
 }
 
 .form-secondary-actions {
@@ -2251,15 +2278,51 @@ h3 {
   animation: modal-backdrop-in var(--motion-state) var(--ease-out-quart) both;
 }
 
+.lab-directory-backdrop {
+  overflow: hidden;
+  background: rgba(23, 20, 18, 0.58);
+  padding-block: clamp(40px, 7dvh, 72px);
+}
+
 .lab-directory-modal {
   width: min(860px, 100%);
-  max-height: min(760px, calc(100dvh - 32px));
+  max-height: min(760px, calc(100dvh - 96px));
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--primary) 72%, var(--stone))
+    color-mix(in srgb, var(--surface-card) 72%, var(--canvas));
   border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
   background: var(--canvas);
   padding: var(--space-xxl);
   animation: modal-panel-in var(--motion-layout) var(--ease-out-quart) both;
+}
+
+.lab-directory-modal::-webkit-scrollbar {
+  width: 12px;
+}
+
+.lab-directory-modal::-webkit-scrollbar-track {
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--surface-card) 72%, var(--canvas));
+  margin-block: var(--space-md);
+}
+
+.lab-directory-modal::-webkit-scrollbar-thumb {
+  border: 3px solid var(--canvas);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--primary) 72%, var(--stone));
+}
+
+.lab-directory-modal::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+.lab-directory-modal::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .modal-heading {
@@ -3233,20 +3296,28 @@ h3 {
   margin-top: var(--space-lg);
 }
 
-.pressure-form label {
+.pressure-form label,
+.pressure-form-field {
   display: grid;
   gap: 6px;
   color: var(--ink);
   font-weight: 800;
 }
 
-.pressure-form input,
-.pressure-form select {
-  min-height: 42px;
+.pressure-form input {
+  width: 100%;
+  min-height: 48px;
   border: 1px solid var(--stone);
   border-radius: var(--radius-md);
-  background: var(--canvas);
-  padding: 9px 10px;
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  padding: 11px 15px;
+  transition:
+    border-color var(--motion-feedback) var(--ease-out-quart),
+    background-color var(--motion-feedback) var(--ease-out-quart),
+    box-shadow var(--motion-feedback) var(--ease-out-quart);
 }
 
 .pressure-notes,
@@ -3806,7 +3877,15 @@ h3 {
   margin-bottom: 6px;
 }
 
-.history-legend {
+.history-legends {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.history-legend,
+.history-reference-legend {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
@@ -3817,7 +3896,13 @@ h3 {
   font-weight: 800;
 }
 
-.history-legend span {
+.history-reference-legend {
+  gap: 6px var(--space-sm);
+  font-size: 0.74rem;
+}
+
+.history-legend span,
+.history-reference-legend span {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -3841,6 +3926,20 @@ h3 {
 
 .history-dot-diastolic {
   background: #008a48;
+}
+
+.history-reference-line {
+  width: 28px;
+  border-top: 2px dashed var(--primary);
+  display: inline-block;
+}
+
+.history-reference-line-probability {
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+}
+
+.history-reference-line-systolic {
+  border-color: color-mix(in srgb, #176a8a 62%, transparent);
 }
 
 .history-chart-wrap {
@@ -4886,7 +4985,7 @@ button.secondary-link {
   }
 
   .lab-directory-modal {
-    max-height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 48px);
     padding: var(--space-xl);
   }
 
@@ -5099,9 +5198,19 @@ button.secondary-link {
     font-size: 1.22rem;
   }
 
-  .history-legend {
+  .history-legends {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .history-legend,
+  .history-reference-legend {
     justify-content: flex-start;
     font-size: 0.72rem;
+  }
+
+  .history-reference-legend {
+    font-size: 0.7rem;
   }
 
   .history-chart-wrap {
@@ -5279,16 +5388,16 @@ button.secondary-link {
   }
 
   .history-modal-backdrop {
-    align-items: end;
-    justify-items: stretch;
+    align-items: center;
+    justify-items: center;
     padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   }
 
   .history-pressure-modal {
-    width: 100%;
+    width: min(100%, 560px);
     max-height: min(86dvh, calc(100dvh - 24px));
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: 0 -18px 42px rgba(40, 35, 31, 0.18);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 18px 42px rgba(40, 35, 31, 0.18);
     padding: var(--space-xl) var(--space-lg) max(var(--space-lg), env(safe-area-inset-bottom));
   }
 
@@ -5302,8 +5411,7 @@ button.secondary-link {
     font-size: 0.84rem;
   }
 
-  .history-pressure-form input,
-  .history-pressure-form select {
+  .history-pressure-form input {
     min-height: 48px;
     font-size: 16px;
   }

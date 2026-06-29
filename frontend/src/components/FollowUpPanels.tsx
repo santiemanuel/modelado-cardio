@@ -1,6 +1,7 @@
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { buttonLabels, stateCopy } from "../content/evaluationContent";
+import { ContextDropdown } from "./ContextDropdown";
 
 export type SavedEvaluation = {
   id: string;
@@ -32,6 +33,12 @@ type FollowUpPanelsProps = {
   onDeletePressureRecord: (id: string) => void;
 };
 
+const pressureArmOptions = [
+  { value: "No informado", label: "No informado" },
+  { value: "Izquierdo", label: "Izquierdo" },
+  { value: "Derecho", label: "Derecho" },
+];
+
 function formatModelName(modelName: string) {
   if (modelName === "logistic_regression" || modelName === "logistic_regression_no_indfmpir") {
     return "Regresión logística";
@@ -51,6 +58,9 @@ export function FollowUpPanels({
   onAddPressureRecord,
   onDeletePressureRecord,
 }: FollowUpPanelsProps) {
+  const [pressureArm, setPressureArm] = useState("No informado");
+  const [isArmDropdownOpen, setIsArmDropdownOpen] = useState(false);
+
   function handlePressureSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -60,10 +70,12 @@ export function FollowUpPanels({
       systolic: String(data.get("systolic") ?? ""),
       diastolic: String(data.get("diastolic") ?? ""),
       pulse: String(data.get("pulse") ?? ""),
-      arm: String(data.get("arm") ?? ""),
+      arm: pressureArm,
       notes: String(data.get("notes") ?? ""),
     });
     event.currentTarget.reset();
+    setPressureArm("No informado");
+    setIsArmDropdownOpen(false);
   }
 
   return (
@@ -136,24 +148,27 @@ export function FollowUpPanels({
           </label>
           <label>
             Sistólica
-            <input name="systolic" inputMode="numeric" required />
+            <input name="systolic" inputMode="numeric" placeholder="Ej. 120" required />
           </label>
           <label>
             Diastólica
-            <input name="diastolic" inputMode="numeric" required />
+            <input name="diastolic" inputMode="numeric" placeholder="Ej. 80" required />
           </label>
           <label>
             Pulso
-            <input name="pulse" inputMode="numeric" />
+            <input name="pulse" inputMode="numeric" placeholder="Opcional, ej. 72" />
           </label>
-          <label>
-            Brazo
-            <select name="arm" defaultValue="No informado">
-              <option>No informado</option>
-              <option>Izquierdo</option>
-              <option>Derecho</option>
-            </select>
-          </label>
+          <ContextDropdown
+            id="follow-up-pressure-arm"
+            label="Brazo"
+            name="arm"
+            value={pressureArm}
+            options={pressureArmOptions}
+            isOpen={isArmDropdownOpen}
+            className="pressure-form-field"
+            onChange={setPressureArm}
+            onOpenChange={setIsArmDropdownOpen}
+          />
           <label className="pressure-notes">
             Observaciones
             <input name="notes" placeholder="Reposo, actividad previa, medicación indicada..." />

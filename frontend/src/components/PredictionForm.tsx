@@ -1,8 +1,11 @@
-import type { FocusEvent, FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { PredictionPayload } from "../api";
 import { buttonLabels, measurementHelp } from "../content/evaluationContent";
+import { ContextDropdown } from "./ContextDropdown";
+import type { ContextDropdownOption } from "./ContextDropdown";
 import {
   calculateBmi,
   fieldGroups,
@@ -57,112 +60,6 @@ const sexOptions: Array<{
   { value: "Female", label: "Femenino" },
   { value: "Male", label: "Masculino" },
 ];
-
-type ContextDropdownOption<T extends string> = {
-  value: T;
-  label: string;
-};
-
-type ContextDropdownProps<T extends string> = {
-  id: string;
-  label: string;
-  value: T;
-  options: Array<ContextDropdownOption<T>>;
-  disabled: boolean;
-  isOpen: boolean;
-  onChange: (value: T) => void;
-  onOpenChange: (isOpen: boolean) => void;
-};
-
-function ContextDropdown<T extends string>({
-  id,
-  label,
-  value,
-  options,
-  disabled,
-  isOpen,
-  onChange,
-  onOpenChange,
-}: ContextDropdownProps<T>) {
-  const selectedOption = options.find((option) => option.value === value) ?? options[0];
-  const labelId = `${id}-label`;
-  const listboxId = `${id}-listbox`;
-
-  function closeAfterBlur(event: FocusEvent<HTMLDivElement>) {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-      onOpenChange(false);
-    }
-  }
-
-  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      onOpenChange(true);
-    }
-
-    if (event.key === "Escape") {
-      onOpenChange(false);
-    }
-  }
-
-  function handleOptionKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "Escape") {
-      onOpenChange(false);
-    }
-  }
-
-  return (
-    <div
-      className={`context-dropdown ${isOpen ? "context-dropdown-open" : ""}`}
-      onBlurCapture={closeAfterBlur}
-    >
-      <span className="context-dropdown-label" id={labelId}>
-        {label}
-      </span>
-      <button
-        className="context-dropdown-trigger"
-        id={id}
-        type="button"
-        role="combobox"
-        aria-controls={listboxId}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-labelledby={labelId}
-        disabled={disabled}
-        onClick={() => onOpenChange(!isOpen)}
-        onKeyDown={handleTriggerKeyDown}
-      >
-        <span>{selectedOption.label}</span>
-        <span className="context-dropdown-chevron" aria-hidden="true" />
-      </button>
-      {isOpen ? (
-        <div className="context-dropdown-menu" id={listboxId} role="listbox" aria-labelledby={labelId}>
-          {options.map((option) => {
-            const isSelected = option.value === value;
-            return (
-              <button
-                className={`context-dropdown-option ${
-                  isSelected ? "context-dropdown-option-selected" : ""
-                }`}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  onOpenChange(false);
-                }}
-                onKeyDown={handleOptionKeyDown}
-              >
-                <span>{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function PredictionForm({
   form,
@@ -403,6 +300,78 @@ export function PredictionForm({
     );
   }
 
+  const directoryModal = isDirectoryOpen
+    ? createPortal(
+        <div
+          className="modal-backdrop lab-directory-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsDirectoryOpen(false);
+            }
+          }}
+        >
+          <section
+            className="lab-directory-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lab-directory-title"
+            aria-describedby="lab-directory-description"
+          >
+            <div className="modal-heading">
+              <div>
+                <span>Directorio local</span>
+                <h2 id="lab-directory-title">Centros para análisis de rutina en Salta Capital</h2>
+              </div>
+              <button
+                className="modal-close"
+                type="button"
+                ref={modalCloseButtonRef}
+                aria-label={buttonLabels.closeDirectory}
+                onClick={() => setIsDirectoryOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <p id="lab-directory-description">
+              {measurementHelp.lab}
+            </p>
+            <div className="directory-list">
+              {labDirectoryCenters.map((center) => (
+                <article className="directory-item" key={center.name}>
+                  <div>
+                    <span>{center.kind}</span>
+                    <h3>{center.name}</h3>
+                    <p>{center.address}</p>
+                    <ResourceContactLinks contact={center.contact} />
+                  </div>
+                  <p>{center.evidence}</p>
+                  <dl className="directory-details">
+                    <div>
+                      <dt>Servicios mencionados</dt>
+                      <dd>{center.servicesMentioned.join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Preguntas para confirmar</dt>
+                      <dd>{center.questionsToConfirm.join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Antes de ir</dt>
+                      <dd>{center.scheduleNote}</dd>
+                    </div>
+                  </dl>
+                  <a href={center.sourceUrl} target="_blank" rel="noreferrer">
+                    Ver sitio de {center.sourceLabel}
+                  </a>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
     <>
     <form className="prediction-form" onSubmit={onSubmit} noValidate>
@@ -609,74 +578,7 @@ export function PredictionForm({
       </div>
     </form>
 
-      {isDirectoryOpen ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setIsDirectoryOpen(false);
-            }
-          }}
-        >
-          <section
-            className="lab-directory-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="lab-directory-title"
-            aria-describedby="lab-directory-description"
-          >
-            <div className="modal-heading">
-              <div>
-                <span>Directorio local</span>
-                <h2 id="lab-directory-title">Centros para análisis de rutina en Salta Capital</h2>
-              </div>
-              <button
-                className="modal-close"
-                type="button"
-                ref={modalCloseButtonRef}
-                aria-label={buttonLabels.closeDirectory}
-                onClick={() => setIsDirectoryOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-            <p id="lab-directory-description">
-              {measurementHelp.lab}
-            </p>
-            <div className="directory-list">
-              {labDirectoryCenters.map((center) => (
-                <article className="directory-item" key={center.name}>
-                  <div>
-                    <span>{center.kind}</span>
-                    <h3>{center.name}</h3>
-                    <p>{center.address}</p>
-                    <ResourceContactLinks contact={center.contact} />
-                  </div>
-                  <p>{center.evidence}</p>
-                  <dl className="directory-details">
-                    <div>
-                      <dt>Servicios mencionados</dt>
-                      <dd>{center.servicesMentioned.join(", ")}</dd>
-                    </div>
-                    <div>
-                      <dt>Preguntas para confirmar</dt>
-                      <dd>{center.questionsToConfirm.join(", ")}</dd>
-                    </div>
-                    <div>
-                      <dt>Antes de ir</dt>
-                      <dd>{center.scheduleNote}</dd>
-                    </div>
-                  </dl>
-                  <a href={center.sourceUrl} target="_blank" rel="noreferrer">
-                    Ver sitio de {center.sourceLabel}
-                  </a>
-                </article>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {directoryModal}
     </>
   );
 }
