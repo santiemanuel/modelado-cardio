@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { FormEvent, MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,10 +13,17 @@ import {
   labDirectoryCenters,
   numericFields,
   raceOptions,
+  validateContextFields,
+  validateContextFieldMap,
   validateNumericFields,
   validateNumericFieldMap,
 } from "./predictionFormConfig";
-import type { EvaluationMode, FormState, NumericFieldKey } from "./predictionFormConfig";
+import type {
+  ContextFieldKey,
+  EvaluationMode,
+  FormState,
+  NumericFieldKey,
+} from "./predictionFormConfig";
 import { ResourceContactLinks } from "./ResourceContactLinks";
 
 type PredictionFormProps = {
@@ -73,6 +80,9 @@ export function PredictionForm({
   const [activeStep, setActiveStep] = useState(0);
   const [stepError, setStepError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<NumericFieldKey, string>>>({});
+  const [contextFieldErrors, setContextFieldErrors] = useState<
+    Partial<Record<ContextFieldKey, string>>
+  >({});
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [openContextDropdown, setOpenContextDropdown] = useState<"sex" | "race" | null>(null);
   const modalCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -87,7 +97,11 @@ export function PredictionForm({
   const currentBmi = calculateBmi(form);
   const isBmiOutsideExpectedRange = currentBmi !== null && (currentBmi < 10 || currentBmi > 80);
   const validationItems = Array.from(
-    new Set(Object.values(fieldErrors).filter((item): item is string => Boolean(item))),
+    new Set(
+      [...Object.values(fieldErrors), ...Object.values(contextFieldErrors)].filter(
+        (item): item is string => Boolean(item),
+      ),
+    ),
   );
   const currentStep = formSteps[activeStep];
   const currentStepDescription =
@@ -170,6 +184,7 @@ export function PredictionForm({
     }
     setStepError(null);
     setFieldErrors({});
+    setContextFieldErrors({});
     setActiveStep(stepIndex);
   }
 
@@ -196,12 +211,14 @@ export function PredictionForm({
 
     setStepError(null);
     setFieldErrors({});
+    setContextFieldErrors({});
     setActiveStep((current) => Math.min(current + 1, formSteps.length - 1));
   }
 
   function goToPreviousStep() {
     setStepError(null);
     setFieldErrors({});
+    setContextFieldErrors({});
     setActiveStep((current) => Math.max(current - 1, 0));
   }
 
@@ -209,7 +226,22 @@ export function PredictionForm({
     onReset();
     setStepError(null);
     setFieldErrors({});
+    setContextFieldErrors({});
     setActiveStep(0);
+  }
+
+  function submitPagedForm(event: MouseEvent<HTMLButtonElement>) {
+    const errors = validateContextFieldMap(form);
+    const error = validateContextFields(form);
+    if (error) {
+      setContextFieldErrors(errors);
+      setStepError("Seleccioná las categorías marcadas antes de enviar.");
+      return;
+    }
+
+    setStepError(null);
+    setContextFieldErrors({});
+    event.currentTarget.form?.requestSubmit();
   }
 
   function renderNumericGroup(group: (typeof fieldGroups)[number]) {
@@ -474,14 +506,28 @@ export function PredictionForm({
                   value={form.sex}
                   disabled={loading}
                   options={sexOptions}
+                  placeholder="Seleccionar"
+                  invalid={Boolean(contextFieldErrors.sex)}
+                  ariaDescribedBy={`field-sex-hint${
+                    contextFieldErrors.sex ? " field-sex-error" : ""
+                  }`}
                   isOpen={openContextDropdown === "sex"}
-                  onChange={(value) => onFormChange("sex", value)}
+                  onChange={(value) => {
+                    setContextFieldErrors((current) => ({ ...current, sex: undefined }));
+                    setStepError(null);
+                    onFormChange("sex", value);
+                  }}
                   onOpenChange={(isOpen) => setOpenContextDropdown(isOpen ? "sex" : null)}
                 />
-                <small>
+                <small id="field-sex-hint">
                   Esta categoría replica la variable disponible en la encuesta original. No describe
                   identidad de género de forma amplia.
                 </small>
+                {contextFieldErrors.sex ? (
+                  <small className="field-error" id="field-sex-error">
+                    {contextFieldErrors.sex}
+                  </small>
+                ) : null}
               </div>
 
               <div className="field">
@@ -491,15 +537,32 @@ export function PredictionForm({
                   value={form.race_ethnicity}
                   disabled={loading}
                   options={raceOptions}
+                  placeholder="Seleccionar"
+                  invalid={Boolean(contextFieldErrors.race_ethnicity)}
+                  ariaDescribedBy={`field-race-hint${
+                    contextFieldErrors.race_ethnicity ? " field-race-error" : ""
+                  }`}
                   isOpen={openContextDropdown === "race"}
-                  onChange={(value) => onFormChange("race_ethnicity", value)}
+                  onChange={(value) => {
+                    setContextFieldErrors((current) => ({
+                      ...current,
+                      race_ethnicity: undefined,
+                    }));
+                    setStepError(null);
+                    onFormChange("race_ethnicity", value);
+                  }}
                   onOpenChange={(isOpen) => setOpenContextDropdown(isOpen ? "race" : null)}
                 />
-                <small>
+                <small id="field-race-hint">
                   Esta categoría proviene de NHANES 2017-2018, una encuesta de Estados Unidos. Puede
                   no representar perfectamente identidades locales; elegí la opción más cercana solo
                   porque el modelo actual la requiere como variable técnica.
                 </small>
+                {contextFieldErrors.race_ethnicity ? (
+                  <small className="field-error" id="field-race-error">
+                    {contextFieldErrors.race_ethnicity}
+                  </small>
+                ) : null}
               </div>
 
               <div
@@ -569,7 +632,7 @@ export function PredictionForm({
               className="submit-button"
               type="button"
               disabled={loading}
-              onClick={(event) => event.currentTarget.form?.requestSubmit()}
+              onClick={submitPagedForm}
             >
               {loading ? buttonLabels.calculating : buttonLabels.evaluateSignals}
             </button>

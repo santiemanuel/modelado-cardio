@@ -1,9 +1,14 @@
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, FileText, Minus } from "lucide-react";
 
 import type { PredictionResponse, ShapExplanation } from "../api";
 import { stateCopy } from "../content/evaluationContent";
-import { disclaimers, getResultRange, resultFactorGroups } from "../content/siteContent";
+import {
+  consultationSummaryStep,
+  disclaimers,
+  getResultRange,
+  resultFactorGroups,
+} from "../content/siteContent";
 
 type PredictionResultPanelProps = {
   error: string | null;
@@ -11,6 +16,7 @@ type PredictionResultPanelProps = {
   probabilityPercent: string | null;
   result: PredictionResponse | null;
   actions?: ReactNode;
+  consultationSummaryAction?: ReactNode;
   variant?: "default" | "full";
 };
 
@@ -88,6 +94,7 @@ function getShapDirectionMeta(direction: ShapExplanation["direction"]) {
 
 export function PredictionResultPanel({
   actions,
+  consultationSummaryAction,
   error,
   loading,
   probabilityPercent,
@@ -110,6 +117,7 @@ export function PredictionResultPanel({
   const meterStyle: ProbabilityMeterStyle = {
     "--probability-position": probabilityPosition,
   };
+  const actionSteps = guidance ? Array.from(new Set(guidance.nextSteps)) : [];
 
   return (
     <aside className={`result-panel ${variant === "full" ? "result-panel-full" : ""}`} aria-live="polite">
@@ -206,15 +214,31 @@ export function PredictionResultPanel({
           </div>
 
           <section className="next-steps-block" aria-labelledby="next-steps-title">
-            <div>
+            <div className="next-steps-heading">
               <p className="result-kicker">Próximo paso</p>
               <h3 id="next-steps-title">Qué hacer ahora</h3>
             </div>
-            <ul className="plain-list">
-              {guidance.nextSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ul>
+            <div className="next-steps-content">
+              <article className="consultation-summary-card" aria-labelledby="consultation-summary-title">
+                <span className="consultation-summary-icon" aria-hidden="true">
+                  <FileText />
+                </span>
+                <div>
+                  <p className="consultation-summary-label">Resumen para la consulta</p>
+                  <h4 id="consultation-summary-title">Llevá esta evaluación preparada</h4>
+                  <p className="consultation-summary-copy">{consultationSummaryStep}</p>
+                  {consultationSummaryAction ? (
+                    <div className="consultation-summary-action">{consultationSummaryAction}</div>
+                  ) : null}
+                </div>
+              </article>
+
+              <ol className="next-step-list">
+                {actionSteps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </div>
           </section>
 
           <section className="factor-explanation" aria-labelledby="factor-explanation-title">

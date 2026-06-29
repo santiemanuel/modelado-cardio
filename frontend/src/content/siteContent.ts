@@ -21,6 +21,9 @@ export const disclaimers = {
     "Si tenés síntomas preocupantes o una medición de presión extremadamente elevada, buscá atención médica urgente por los canales locales.",
 };
 
+export const consultationSummaryStep =
+  "Llevalo a una consulta médica junto con tus mediciones reales de presión para revisar el contexto completo.";
+
 export const resultRanges = [
   {
     min: 0,

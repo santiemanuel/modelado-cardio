@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check } from "lucide-react";
 
 import { requestPrediction, requestSimplePrediction } from "../api";
 import type { PredictionResponse } from "../api";
@@ -43,11 +44,17 @@ function formatModelName(modelName: string) {
 }
 
 function formatSex(value: FormState["sex"]) {
-  return value === "Female" ? "Femenino reportado" : "Masculino reportado";
+  if (value === "Female") {
+    return "Femenino reportado";
+  }
+  if (value === "Male") {
+    return "Masculino reportado";
+  }
+  return "Sin seleccionar";
 }
 
 function formatRace(value: FormState["race_ethnicity"]) {
-  const labels: Record<FormState["race_ethnicity"], string> = {
+  const labels: Record<Exclude<FormState["race_ethnicity"], "">, string> = {
     "Mexican American": "Mexicano estadounidense",
     "Non-Hispanic Asian": "Asi\u00e1tico no hispano",
     "Non-Hispanic Black": "Negro no hispano",
@@ -56,7 +63,7 @@ function formatRace(value: FormState["race_ethnicity"]) {
     "Other Race / Multi-Racial": "Otra raza o multirracial",
   };
 
-  return labels[value];
+  return value ? labels[value] : "Sin seleccionar";
 }
 
 function formatPdfFactorLabel(feature: string, label: string) {
@@ -145,7 +152,9 @@ export function PredictionTool() {
   const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>("complete");
   const [flowStarted, setFlowStarted] = useState(false);
   const [history, setHistory] = useState<SavedEvaluation[]>([]);
+  const [isCurrentEvaluationSaved, setIsCurrentEvaluationSaved] = useState(false);
   const resultSummaryRef = useRef<HTMLDivElement | null>(null);
+  const currentEvaluationSavedRef = useRef(false);
 
   const probabilityPercent = useMemo(() => {
     if (!result) {
@@ -194,6 +203,8 @@ export function PredictionTool() {
     setForm(nextForm);
     setError(null);
     setResult(null);
+    setIsCurrentEvaluationSaved(false);
+    currentEvaluationSavedRef.current = false;
   }
 
   function resetForm() {
@@ -216,6 +227,8 @@ export function PredictionTool() {
     setFlowStarted(false);
     setError(null);
     setResult(null);
+    setIsCurrentEvaluationSaved(false);
+    currentEvaluationSavedRef.current = false;
   }
 
   function confirmConsent() {
@@ -252,6 +265,8 @@ export function PredictionTool() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setIsCurrentEvaluationSaved(false);
+    currentEvaluationSavedRef.current = false;
 
     try {
       const prediction =
@@ -321,9 +336,10 @@ export function PredictionTool() {
   }
 
   function saveCurrentEvaluation() {
-    if (!result) {
+    if (!result || currentEvaluationSavedRef.current) {
       return;
     }
+    currentEvaluationSavedRef.current = true;
     const saved: SavedEvaluation = {
       id: createLocalId(),
       createdAt: new Date().toISOString(),
@@ -363,6 +379,7 @@ export function PredictionTool() {
       ],
     };
     persistHistory([saved, ...history]);
+    setIsCurrentEvaluationSaved(true);
   }
 
   function downloadSummary() {
@@ -456,13 +473,30 @@ export function PredictionTool() {
         {consentAccepted && result ? (
           <div className="summary-workspace" aria-label="Resumen orientativo" ref={resultSummaryRef}>
             <PredictionResultPanel
+              consultationSummaryAction={
+                <button className="step-next" type="button" onClick={downloadSummary}>
+                  {buttonLabels.downloadSummary}
+                </button>
+              }
               actions={
                 <>
-                  <button className="step-next" type="button" onClick={downloadSummary}>
-                    {buttonLabels.downloadSummary}
-                  </button>
-                  <button className="form-reset" type="button" onClick={saveCurrentEvaluation}>
-                    {buttonLabels.saveOnDevice}
+                  <button
+                    className={`form-reset save-evaluation-button ${
+                      isCurrentEvaluationSaved ? "save-evaluation-button-saved" : ""
+                    }`.trim()}
+                    type="button"
+                    aria-live="polite"
+                    disabled={isCurrentEvaluationSaved}
+                    onClick={saveCurrentEvaluation}
+                  >
+                    {isCurrentEvaluationSaved ? (
+                      <>
+                        <Check aria-hidden="true" />
+                        Guardado
+                      </>
+                    ) : (
+                      buttonLabels.saveOnDevice
+                    )}
                   </button>
                   <button className="step-next" type="button" onClick={startNewTest}>
                     Realizar un nuevo test

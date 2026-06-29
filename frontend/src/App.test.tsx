@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -131,6 +131,8 @@ async function fillValidForm() {
   await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "6.2");
 
   await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("combobox", { name: "Sexo reportado" }));
+  await user.click(screen.getByRole("option", { name: "Femenino" }));
   await user.click(screen.getByRole("combobox", { name: "Grupo étnico reportado" }));
   await user.click(screen.getByRole("option", { name: "Negro no hispano" }));
 
@@ -617,6 +619,10 @@ describe("App", () => {
     await user.type(screen.getByLabelText("HDL"), "60");
     await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "6,2");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("combobox", { name: "Sexo reportado" }));
+    await user.click(screen.getByRole("option", { name: "Femenino" }));
+    await user.click(screen.getByRole("combobox", { name: "Grupo étnico reportado" }));
+    await user.click(screen.getByRole("option", { name: "Negro no hispano" }));
     await user.click(screen.getByRole("button", { name: "Evaluar señales" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
@@ -626,6 +632,44 @@ describe("App", () => {
       BMXWAIST: 101.8,
       LBXGH: 6.2,
     });
+  });
+
+  it("requires explicit context dropdown selections before sending", async () => {
+    const user = userEvent.setup();
+    renderAt("/evaluar");
+
+    await acceptConsent(user);
+    await user.click(screen.getByRole("button", { name: /Con laboratorio reciente/ }));
+    await user.type(screen.getByLabelText("Edad"), "66");
+    await user.type(screen.getByLabelText("Peso"), "90.5");
+    await user.type(screen.getByLabelText("Altura"), "169");
+    await user.type(screen.getByLabelText("Perímetro de cintura"), "101.8");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Colesterol total"), "157");
+    await user.type(screen.getByLabelText("HDL"), "60");
+    await user.type(screen.getByLabelText("Hemoglobina glicosilada / HbA1c"), "6.2");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    const contextDropdowns = screen.getAllByRole("combobox");
+    expect(contextDropdowns).toHaveLength(2);
+    expect(contextDropdowns.every((dropdown) => dropdown.textContent === "Seleccionar")).toBe(
+      true,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Evaluar señales" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Seleccioná las categorías marcadas antes de enviar.",
+    );
+    expect(screen.getByRole("combobox", { name: "Sexo reportado" })).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByRole("combobox", { name: "Grupo étnico reportado" })).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("loads a test profile into the paginated form", async () => {
@@ -711,6 +755,18 @@ describe("App", () => {
     expect(screen.getByText(/Estimación del modelo, no diagnóstico individual/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Qué hacer ahora" })).toBeInTheDocument();
     expect(screen.getByText(/No tomes decisiones de medicación/)).toBeInTheDocument();
+    expect(screen.getByText("Resumen para la consulta")).toBeInTheDocument();
+    expect(screen.getByText(/Llevalo a una consulta médica/)).toBeInTheDocument();
+    const consultationSummaryCard = screen
+      .getByText("Resumen para la consulta")
+      .closest(".consultation-summary-card");
+    expect(consultationSummaryCard).not.toBeNull();
+    expect(
+      within(consultationSummaryCard as HTMLElement).getByRole("button", {
+        name: "Descargar resumen",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Descargar resumen" })).toHaveLength(1);
     expect(screen.getByText(/Priorizá una medición correcta/)).toBeInTheDocument();
     expect(screen.getByText("Regresión logística")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Qué influyó en este resultado" })).toBeInTheDocument();
@@ -789,6 +845,29 @@ describe("App", () => {
     );
   });
 
+  it("marks the current result as saved and prevents duplicate saves", async () => {
+    renderAt("/evaluar");
+    const user = await fillValidForm();
+
+    await user.click(screen.getByRole("button", { name: /Evaluar se.al/ }));
+    await waitFor(() => expect(screen.getByText("72%")).toBeInTheDocument());
+
+    const saveButton = screen.getByRole("button", { name: "Guardar en este dispositivo" });
+    await user.click(saveButton);
+
+    const savedButton = screen.getByRole("button", { name: "Guardado" });
+    expect(savedButton).toBeDisabled();
+    const storedHistory = JSON.parse(window.localStorage.getItem(HISTORY_KEY) ?? "[]");
+    expect(storedHistory).toHaveLength(1);
+
+    await user.click(savedButton);
+
+    const storedHistoryAfterSecondClick = JSON.parse(
+      window.localStorage.getItem(HISTORY_KEY) ?? "[]",
+    );
+    expect(storedHistoryAfterSecondClick).toHaveLength(1);
+  });
+
   it("submits simple mode without laboratory fields", async () => {
     vi.stubGlobal(
       "fetch",
@@ -816,6 +895,10 @@ describe("App", () => {
     expect(screen.queryByLabelText("Hemoglobina glicosilada / HbA1c")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("combobox", { name: "Sexo reportado" }));
+    await user.click(screen.getByRole("option", { name: "Femenino" }));
+    await user.click(screen.getByRole("combobox", { name: "Grupo étnico reportado" }));
+    await user.click(screen.getByRole("option", { name: "Negro no hispano" }));
     await user.click(screen.getByRole("button", { name: "Evaluar señales" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());

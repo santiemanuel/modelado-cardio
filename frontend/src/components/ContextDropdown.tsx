@@ -8,12 +8,15 @@ export type ContextDropdownOption<T extends string> = {
 type ContextDropdownProps<T extends string> = {
   id: string;
   label: string;
-  value: T;
+  value: T | "";
   options: Array<ContextDropdownOption<T>>;
   disabled?: boolean;
   isOpen: boolean;
   name?: string;
   className?: string;
+  placeholder?: string;
+  invalid?: boolean;
+  ariaDescribedBy?: string;
   onChange: (value: T) => void;
   onOpenChange: (isOpen: boolean) => void;
 };
@@ -27,10 +30,13 @@ export function ContextDropdown<T extends string>({
   isOpen,
   name,
   className = "",
+  placeholder = "Seleccionar",
+  invalid = false,
+  ariaDescribedBy,
   onChange,
   onOpenChange,
 }: ContextDropdownProps<T>) {
-  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const selectedOption = options.find((option) => option.value === value);
   const labelId = `${id}-label`;
   const listboxId = `${id}-listbox`;
 
@@ -67,19 +73,23 @@ export function ContextDropdown<T extends string>({
       </span>
       {name ? <input type="hidden" name={name} value={value} /> : null}
       <button
-        className="context-dropdown-trigger"
+        className={`context-dropdown-trigger ${
+          selectedOption ? "" : "context-dropdown-trigger-placeholder"
+        } ${invalid ? "context-dropdown-trigger-invalid" : ""}`.trim()}
         id={id}
         type="button"
         role="combobox"
         aria-controls={listboxId}
+        aria-describedby={ariaDescribedBy}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        aria-invalid={invalid ? true : undefined}
         aria-labelledby={labelId}
         disabled={disabled}
         onClick={() => onOpenChange(!isOpen)}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span>{selectedOption.label}</span>
+        <span>{selectedOption?.label ?? placeholder}</span>
         <span className="context-dropdown-chevron" aria-hidden="true" />
       </button>
       {isOpen ? (

@@ -9,12 +9,14 @@ export type FormState = {
   LBXTC: string;
   LBDHDD: string;
   LBXGH: string;
-  sex: PredictionPayload["sex"];
-  race_ethnicity: PredictionPayload["race_ethnicity"];
+  sex: PredictionPayload["sex"] | "";
+  race_ethnicity: PredictionPayload["race_ethnicity"] | "";
   current_smoker: "0.0" | "1.0";
 };
 
 export type EvaluationMode = "complete" | "simple";
+
+export type ContextFieldKey = "sex" | "race_ethnicity";
 
 export type NumericFieldKey = keyof Pick<
   FormState,
@@ -29,8 +31,8 @@ export const initialForm: FormState = {
   LBXTC: "",
   LBDHDD: "",
   LBXGH: "",
-  sex: "Female",
-  race_ethnicity: "Non-Hispanic White",
+  sex: "",
+  race_ethnicity: "",
   current_smoker: "0.0",
 };
 
@@ -45,6 +47,16 @@ export const raceOptions: Array<{
   { value: "Other Hispanic", label: "Otro origen hispano" },
   { value: "Other Race / Multi-Racial", label: "Otra raza o multirracial" },
 ];
+
+function isSexValue(value: FormState["sex"]): value is PredictionPayload["sex"] {
+  return value === "Female" || value === "Male";
+}
+
+function isRaceEthnicityValue(
+  value: FormState["race_ethnicity"],
+): value is PredictionPayload["race_ethnicity"] {
+  return raceOptions.some((option) => option.value === value);
+}
 
 export const numericFields: Array<{
   key: NumericFieldKey;
@@ -385,6 +397,42 @@ export function validateNumericFields(form: FormState, fields: NumericFieldKey[]
   return null;
 }
 
+export function validateContextFieldMap(
+  form: Pick<FormState, ContextFieldKey>,
+): Partial<Record<ContextFieldKey, string>> {
+  const errors: Partial<Record<ContextFieldKey, string>> = {};
+
+  if (!isSexValue(form.sex)) {
+    errors.sex = "Seleccioná el sexo reportado.";
+  }
+  if (!isRaceEthnicityValue(form.race_ethnicity)) {
+    errors.race_ethnicity = "Seleccioná el grupo étnico reportado.";
+  }
+
+  return errors;
+}
+
+export function validateContextFields(form: Pick<FormState, ContextFieldKey>): string | null {
+  const errors = validateContextFieldMap(form);
+  return errors.sex ?? errors.race_ethnicity ?? null;
+}
+
+function getPredictionSex(value: FormState["sex"]): PredictionPayload["sex"] {
+  if (!isSexValue(value)) {
+    throw new Error("Seleccioná el sexo reportado.");
+  }
+  return value;
+}
+
+function getPredictionRaceEthnicity(
+  value: FormState["race_ethnicity"],
+): PredictionPayload["race_ethnicity"] {
+  if (!isRaceEthnicityValue(value)) {
+    throw new Error("Seleccioná el grupo étnico reportado.");
+  }
+  return value;
+}
+
 export function toPredictionPayload(form: FormState): PredictionPayload {
   const bmi = calculateBmi(form);
   return {
@@ -394,8 +442,8 @@ export function toPredictionPayload(form: FormState): PredictionPayload {
     LBXTC: parseNumericValue(form.LBXTC),
     LBDHDD: parseNumericValue(form.LBDHDD),
     LBXGH: parseNumericValue(form.LBXGH),
-    sex: form.sex,
-    race_ethnicity: form.race_ethnicity,
+    sex: getPredictionSex(form.sex),
+    race_ethnicity: getPredictionRaceEthnicity(form.race_ethnicity),
     current_smoker: Number(form.current_smoker) as 0.0 | 1.0,
   };
 }
@@ -406,8 +454,8 @@ export function toSimplePredictionPayload(form: FormState): SimplePredictionPayl
     RIDAGEYR: parseNumericValue(form.RIDAGEYR),
     BMXBMI: bmi ?? Number.NaN,
     BMXWAIST: parseNumericValue(form.BMXWAIST),
-    sex: form.sex,
-    race_ethnicity: form.race_ethnicity,
+    sex: getPredictionSex(form.sex),
+    race_ethnicity: getPredictionRaceEthnicity(form.race_ethnicity),
     current_smoker: Number(form.current_smoker) as 0.0 | 1.0,
   };
 }
@@ -417,5 +465,5 @@ export function validateForm(form: FormState, mode: EvaluationMode = "complete")
     mode === "simple"
       ? fieldGroups[0].fields
       : numericFields.map((field) => field.key);
-  return validateNumericFields(form, fields);
+  return validateNumericFields(form, fields) ?? validateContextFields(form);
 }
