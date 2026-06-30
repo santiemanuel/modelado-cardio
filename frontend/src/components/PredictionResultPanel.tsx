@@ -23,6 +23,7 @@ type PredictionResultPanelProps = {
 type ProbabilityTone = "green" | "yellow" | "red";
 
 type ProbabilityGuidance = {
+  label: string;
   tone: ProbabilityTone;
   range: string;
   interpretation: string;
@@ -55,6 +56,7 @@ function ShapDirectionIcon({ tone }: { tone: ShapDirectionTone }) {
 function getProbabilityGuidance(probability: number): ProbabilityGuidance {
   const range = getResultRange(probability);
   return {
+    label: range.label,
     tone: range.tone,
     range: `${range.min}-${range.max}%`,
     interpretation: `${range.interpretation} ${range.disclaimer}`,
@@ -150,14 +152,14 @@ export function PredictionResultPanel({
               <div className="result-heading">
                 <div>
                   <p className="result-kicker">Resumen orientativo</p>
-                  <h2>{result.risk_label}</h2>
+                  <h2>{guidance.label}</h2>
                 </div>
               </div>
 
               <div
                 className="probability-meter"
                 role="meter"
-                aria-label="Semáforo de probabilidad"
+                aria-label="Escala de prioridad orientativa"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={Math.round(result.probability * 100)}
@@ -177,9 +179,9 @@ export function PredictionResultPanel({
                   <span className="traffic-marker" />
                 </div>
                 <div className="traffic-labels" aria-hidden="true">
-                  <span>Verde</span>
-                  <span>Advertencia</span>
-                  <span>Alto riesgo</span>
+                  <span>Prioridad baja</span>
+                  <span>Prioridad moderada</span>
+                  <span>Prioridad alta</span>
                 </div>
               </div>
             </div>
@@ -194,8 +196,10 @@ export function PredictionResultPanel({
 
               <dl className="result-details">
                 <div>
-                  <dt>Tramo comunicacional</dt>
-                  <dd>{guidance.range}</dd>
+                  <dt>Prioridad orientativa</dt>
+                  <dd>
+                    {guidance.label} ({guidance.range})
+                  </dd>
                 </div>
                 <div>
                   <dt>Umbral del modelo</dt>

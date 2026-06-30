@@ -31,7 +31,7 @@ export const resultRanges = [
     label: "Prioridad baja",
     tone: "green",
     interpretation:
-      "Las señales cargadas no sugieren prioridad alta, pero siguen siendo una lectura orientativa.",
+      "Las señales cargadas sugieren una prioridad baja de revisión, siempre como lectura orientativa.",
     nextStep: "Mantené controles habituales y medí tu presión cuando corresponda.",
     nextSteps: [
       "Mantené controles habituales.",
@@ -62,7 +62,7 @@ export const resultRanges = [
     label: "Prioridad alta",
     tone: "red",
     interpretation:
-      "El modelo detecta una combinación de señales que amerita priorizar una revisión clínica.",
+      "El modelo ubica estas señales en una prioridad alta de revisión clínica.",
     nextStep:
       "Priorizá una medición correcta de presión arterial y conversá con un profesional.",
     nextSteps: [
@@ -78,7 +78,7 @@ export const resultRanges = [
     label: "Prioridad muy alta",
     tone: "red",
     interpretation:
-      "La probabilidad orientativa es muy alta y no debería manejarse solo con esta herramienta.",
+      "La probabilidad orientativa ubica estas señales en una prioridad muy alta de revisión.",
     nextStep:
       "Buscá evaluación médica pronta; si hay síntomas o presión medida muy elevada, usá los canales de urgencia locales.",
     nextSteps: [
@@ -220,6 +220,10 @@ export const forbiddenFeatures = [
   "BPXDI2",
   "BPXDI3",
   "BPXDI4",
+  "sbp_mean_all",
+  "dbp_mean_all",
+  "sbp_mean_followup",
+  "dbp_mean_followup",
   "sbp_mean",
   "dbp_mean",
   "BPQ020",

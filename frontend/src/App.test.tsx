@@ -371,7 +371,7 @@ describe("App", () => {
     renderAt("/historial/eval-1");
 
     expect(screen.getByRole("heading", { name: "Resultado guardado" })).toBeInTheDocument();
-    expect(screen.getByText("señales compatibles con hipertensión")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prioridad alta" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Mediciones del día" })).toBeInTheDocument();
     expect(screen.getAllByText("142/88 mmHg").length).toBeGreaterThan(0);
     expect(screen.getByText("Reposo")).toBeInTheDocument();
@@ -744,14 +744,15 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Evaluar señales" }));
 
     await waitFor(() => expect(screen.getByText("72%")).toBeInTheDocument());
-    expect(screen.getByText("señales compatibles con hipertensión")).toBeInTheDocument();
-    expect(screen.getByRole("meter", { name: "Semáforo de probabilidad" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "Prioridad alta" })).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "Escala de prioridad orientativa" })).toHaveAttribute(
       "aria-valuenow",
       "72",
     );
-    expect(screen.queryByText("Rojo de riesgo alto")).not.toBeInTheDocument();
-    expect(screen.getByText("50-74%")).toBeInTheDocument();
-    expect(screen.getByText("Tramo comunicacional")).toBeInTheDocument();
+    expect(screen.queryByText("Advertencia")).not.toBeInTheDocument();
+    expect(screen.queryByText("Alto riesgo")).not.toBeInTheDocument();
+    expect(screen.getByText("Prioridad alta (50-74%)")).toBeInTheDocument();
+    expect(screen.getByText("Prioridad orientativa")).toBeInTheDocument();
     expect(screen.getByText(/Estimación del modelo, no diagnóstico individual/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Qué hacer ahora" })).toBeInTheDocument();
     expect(screen.getByText(/No tomes decisiones de medicación/)).toBeInTheDocument();

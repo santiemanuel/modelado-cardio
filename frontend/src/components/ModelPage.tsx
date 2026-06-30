@@ -151,19 +151,46 @@ export function ModelPage() {
           </div>
         </section>
 
+        <section className="content-block" aria-labelledby="target-variable-title">
+          <h2 id="target-variable-title">Variable objetivo derivada</h2>
+          <p>
+            Para entrenar el modelo se creó <code>hypertension_130_80</code>, una etiqueta interna
+            del dataset NHANES. No se pide en el formulario.
+          </p>
+          <ul className="plain-list">
+            <li>
+              Usa el promedio de presión sistólica y diastólica, priorizando las lecturas 2 a 4.
+            </li>
+            <li>
+              También considera <code>hbp_med_current</code>, derivada de la pregunta sobre
+              medicación actual para bajar la presión.
+            </li>
+            <li>
+              Marca señal positiva si la sistólica es <code>≥130</code>, la diastólica es{" "}
+              <code>≥80</code> o hay medicación antihipertensiva actual.
+            </li>
+          </ul>
+          <p>
+            Esas columnas definen el objetivo de entrenamiento, pero no entran como datos del modelo.
+          </p>
+        </section>
+
         <section className="content-block" aria-labelledby="forbidden-title">
           <h2 id="forbidden-title">Datos que el modelo no usa</h2>
           <p>
-            El modelo no usa mediciones directas de presión arterial ni variables de diagnóstico o
-            medicación como entrada. Esto evita que el resultado dependa de datos que ya confirmarían
-            la condición que se intenta estimar.
+            Se excluyen datos que revelarían la respuesta: lecturas de presión, promedios derivados,
+            diagnóstico previo y medicación antihipertensiva. Así se evita fuga de información.
           </p>
           <aside className="model-not-requested-note" aria-labelledby="not-requested-title">
-            <h3 id="not-requested-title">Dato que no se solicita</h3>
+            <h3 id="not-requested-title">Datos descartados por diseño operativo</h3>
             <p>
-              El formulario no te pide ingresos familiares (<code>INDFMPIR</code>) y el modelo
-              operativo actual tampoco usa esa variable. No necesitás cargarla y tampoco se deduce a
-              partir de tus respuestas.
+              <code>INDFMPIR</code> quedó fuera por bajo aporte predictivo, poca extrapolación local
+              y fricción de carga. Tampoco se piden columnas de auditoría o diseño muestral, como{" "}
+              <code>SEQN</code>, <code>WTMEC2YR</code>, <code>SDMVSTRA</code> y <code>SDMVPSU</code>.
+            </p>
+            <p>
+              El modo simple no usa laboratorio; el modo completo sí usa <code>LBXTC</code>,{" "}
+              <code>LBDHDD</code> y <code>LBXGH</code>.
             </p>
           </aside>
           <ul className="chip-list">
